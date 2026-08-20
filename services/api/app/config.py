@@ -3,12 +3,12 @@
 Uses environment variables with sensible defaults for local development.
 """
 
-from pydantic_settings import BaseSettings, ConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
 
 class Settings(BaseSettings):
-    model_config = ConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     # App
     app_name: str = "ZarrinPal Analytics API"

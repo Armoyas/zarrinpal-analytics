@@ -98,5 +98,5 @@ The project must contain:
 - [x] No full CSV committed to Git
 - [x] DuckDB backend using real CSV columns
 - [x] API endpoints for overview, merchants, time-series
-- [x] Traceshow calculations ("How calculated?" metadata)
+- [x] Traceable calculations ("How calculated?" metadata)
 - [x] Tests for metric calculations
