@@ -315,8 +315,8 @@ class RecommendationEngine:
                     "title": "Learn from Top Performing Peers",
                     "description": (
                         f"Peer merchant in your category achieves "
-                        f"{float(top_peer[1]):.0f} average transaction value "
-                        f"vs your {float(top_peer[3]):.0f}. "
+                        f"{peer_avg_txn:.0f} average transaction value "
+                        f"vs your {my_avg_txn:.0f}. "
                         f"Study their checkout flow and product pricing strategy."
                     ),
                     "priority": "medium",
