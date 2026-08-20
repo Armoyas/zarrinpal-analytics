@@ -1,13 +1,15 @@
 # ===== Project-specific: ZarrinPal Analytics =====
 
 # Dataset — NEVER commit the 500MB CSV or DuckDB files
-data/*.csv
 data/*.csv.gz
 data/*.tsv
 data/*.zip
 data/*.duckdb
 data/*.duckdb.wal
 !data/README.md
+
+# Sample dataset (Phase 0) — small, safe to commit
+!data/sample_data.csv
 
 # Frontend (Node / Next.js)
 frontend/node_modules/
@@ -16,10 +18,11 @@ frontend/out/
 frontend/.env.local
 frontend/next-env.d.ts
 
-# Env (never commit secrets)
+# Environment
 .env
 .env.local
 .env.*.local
+.env.example
 
 # Build artifacts
 *.pyc
@@ -27,10 +30,10 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 
-# ===== Standard Python gitignore =====
+# Standard Python gitignore
 
 # Byte-compiled / optimized / DLL files
-__pycache__/
+__pycache_/
 *.py[codz]
 *$py.class
 
@@ -72,16 +75,6 @@ coverage.xml
 .pytest_cache/
 cover/
 
-# Environments
-.env
-.envrc
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
 # IDE
 .idea/
 .vscode/
@@ -107,3 +100,6 @@ pip-delete-this-directory.txt
 # OS
 .DS_Store
 Thumbs.db
+
+# Docker
+docker-compose.override.yml

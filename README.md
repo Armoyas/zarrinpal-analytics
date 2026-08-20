@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <div align="center">
 
 # داشبورد تحلیلی زرین‌پال · ZarrinPal Analytics Dashboard
@@ -222,3 +223,78 @@ Every analytical view is expressed as an **explicit SQL query** in `services/dat
 ---
 
 *Built for the ZarrinPal data-analytics challenge (Elcamp 1405).*
+=======
+# ZarrinPal Analytics Dashboard
+
+## Overview
+
+A Persian (Farsi) RTL, mobile-first analytics dashboard for ZarinPal merchants. The dashboard provides explainable metrics and actionable insights based on the ZarinPal payment transaction dataset.
+
+## Quick Start
+
+### Prerequisites
+- Python 3.10+
+- Node.js 18+ (for frontend)
+
+### Backend Setup
+
+```bash
+cd services/api
+pip install -r requirements.txt
+
+# Place your CSV dataset
+cp /path/to/your/zarrinpal_dataset.csv data/
+
+# Run the API
+uvicorn app.main:app --reload --port 8000
+```
+
+### Generate Sample Data
+
+```bash
+python scripts/seed_demo.py --rows 50000 --out data/sample_data.csv
+```
+
+### Frontend Setup
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## Project Status
+
+Currently in **Phase 0 — Dataset Schema Inspection & Foundation**.
+
+See `docs/PROJECT_HANDOFF.md` for the full project handoff, development methodology, and current phase details.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Frontend (Next.js + TypeScript + Tailwind + shadcn/ui) │
+└─────────────────────────┬───────────────────────────────┘
+                          │ REST API (JSON)
+┌─────────────────────────▼───────────────────────────────┐
+│  Backend (FastAPI + DuckDB)                             │
+└─────────────────────────┬───────────────────────────────┘
+                          │ SQL (explicit, traceable)
+┌─────────────────────────▼───────────────────────────────┐
+│  Raw CSV Data (500MB, never committed to Git)           │
+└─────────────────────────────────────────────────────────┘
+```
+
+## Data Constraints
+
+- **Dataset size**: ~480MB CSV (never committed)
+- **Row level**: Payment attempt (`try_seq`), not unique session
+- **Currency**: Iranian Rials
+- **`adjusted_fee`**: Obfuscated with a constant coefficient — only relative comparisons valid
+- **Nullable columns**: `switch_response_code`, `psp_code`, `issuer_bank_code`, `payer_card_key`, `init_time_ms`, `verify_time_ms`, `try_created_at`, `verified_at`, `settled_at`
+- **No reliable customer_id or product_id columns** — customer retention, product sales, inventory analysis, and fast/slow-moving product features are NOT implemented
+
+## License
+
+MIT
+>>>>>>> 7fbac18 (fix: align backend with real ZarinPal CSV schema)
