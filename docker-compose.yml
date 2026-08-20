@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: zarrinpal-postgres
+    environment:
+      POSTGRES_DB: zarrinpal
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zarrinpal_secret}
+    volumes:
+      - zarrinpal_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  api:
+    build: 
+      context: ./services/api
+      dockerfile: Dockerfile
+    container_name: zarrinpal-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-zarrinpal_secret}@postgres:5432/zarrinpal
+      - DATA_FILE=/app/data/zarrinpal_dataset.csv
+      - DUCKDB_PATH=/app/data/transactions.duckdb
+      - DEBUG=false
+    volumes:
+      - zarrinpal_data_volume:/app/data
+      - ./data:/app/data:ro
+    ports:
+      - "8000:8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 60
+    restart: unless-stopped
+
+  # Frontend Dashboard
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: zarrinpal-frontend
+    depends_on:
+      - api
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+      - NODE_ENV=production
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  # Metabase for traceability (optional but recommended)
+  metabase:
+    image: metabase/metabase:v0.49.0
+    container_name: zarrinpal-metabase
+    depends_on:
+      - postgres
+    environment:
+      - MB_DB_FILE=/metabase-data/metabase.db
+    volumes:
+      - zarrinpal_metabase:/metabase-data
+    ports:
+      - "3001:3000"
+    restart: unless-stopped
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: zarrinpal-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+volumes:
+  zarrinpal_data:
+  zarrinpal_data_volume:
+  zarrinpal_metabase:
