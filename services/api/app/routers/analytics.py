@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from datetime import datetime, date, timedelta
 from typing import Optional
+from sqlalchemy import func
 
 from database import get_db
 from models import Merchant, AnalyticsFact, Recommendation
@@ -230,7 +231,3 @@ async def get_marketplace_metrics(
         avg_adjusted_fee_share=0.0,
         top_performers=[MerchantResponse.model_validate(m) for m in top_merchants],
     )
-
-
-# Need to import func
-from sqlalchemy import func
