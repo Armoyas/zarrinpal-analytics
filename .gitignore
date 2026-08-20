@@ -1,6 +1,8 @@
 # ===== Project-specific: ZarrinPal Analytics =====
 
-# Dataset — NEVER commit the 500MB CSV or DuckDB files
+# Dataset — NEVER commit the large CSV or DuckDB files
+smaple.csv
+data/*_dataset.csv
 data/*.csv.gz
 data/*.tsv
 data/*.zip

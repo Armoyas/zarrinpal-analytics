@@ -19,9 +19,9 @@
 | Layer | Tech |
 |---|---|
 | Frontend | Next.js 14 (App Router) · React 18 · TypeScript · shadcn/ui · Tailwind CSS v3 · Recharts |
-| Backend | FastAPI · SQLAlchemy · Pydantic v2 |
-| Data | DuckDB (تحلیل سریع) → PostgreSQL (ماندگاری) · Pandas |
-| Deploy | Docker Compose · Metabase (اختیاری) · Redis (اختیاری) |
+| Backend | FastAPI · DuckDB (direct CSV querying) · Pydantic v2 |
+| Data | DuckDB (CSV direct read, no intermediate PostgreSQL) |
+| Deploy | Docker Compose (simple, no Metabase/Redis needed) |
 
 ---
 
@@ -31,26 +31,24 @@
 services/
 ├── api/                      # FastAPI backend
 │   └── app/
-│       ├── main.py           # ورودی + اتصال روترها
-│       ├── config.py         # تنظیمات مبتنی بر env
-│       ├── database.py       # SQLAlchemy + PostgreSQL
-│       ├── models/           # Merchant, Transaction, AnalyticsFact, Recommendation
-│       ├── schemas/          # مدل‌های Pydantic
-│       ├── routers/          # health, merchants, analytics
-│       └── services/         # analytics_engine, data_processor, recommendations
-├── data-processing/          # پایپ‌لاین مستقل
-│   ├── ingest.py             # CSV چانکی → DuckDB
-│   └── process.py            # نماهای تحلیلی (SQL صریح)
+│       ├── main.py           # Entry point + router registration
+│       ├── config.py         # Settings based on env
+│       ├── database.py       # DuckDB connection management
+│       ├── api/v1/endpoints/ # health, schema, overview, merchants, trend
+│       └── services/         # analytics_engine, data_processor
+├── data-processing/          # Independent pipeline (optional)
+│   └── process.py            # Analytical SQL views (explicit queries)
 frontend/
 ├── app/                      # layout (RTL + Vazirmatn), page, globals.css
 ├── components/
-│   ├── dashboard/            # ۸ پنل داشبورد
+│   ├── dashboard/            # Dashboard panels
 │   ├── layout/               # Header, Sidebar, DashboardLayout
 │   └── ui/                   # shadcn primitives
-└── lib/                      # api client + format utils
-scripts/                      # run_pipeline.py, seed_demo.py
-docs/                         # setup.md, demo-script.md
-specs/                        # constitution, planning, tasks, spec (SDD)
+└── lib/                      # API client + format utils
+scripts/                      # seed_demo.py, inspect_schema.py
+docs/                         # setup.md, demo-script.md, PROJECT_HANDOFF.md
+docs/                         # data-dictionary.md, schema-summary.json
+specs/                        # SDD specifications
 ```
 
 ---
@@ -60,21 +58,22 @@ specs/                        # constitution, planning, tasks, spec (SDD)
 ```bash
 # Backend
 cd services/api && pip install -r requirements.txt
+python ../scripts/seed_demo.py --rows 10000 --out data/sample_data.csv
 uvicorn app.main:app --reload            # http://localhost:8000
 
 # Frontend
 cd frontend && npm install && npm run dev   # http://localhost:3000
-npm run build
 
-# Data pipeline
-cd services/data-processing && pip install -r requirements.txt
-python ingest.py --csv ../../data/zarrinpal_dataset.csv
-python process.py
+# Tests
+cd services/api && pytest -v
 
-# Sample data
-python scripts/seed_demo.py --rows 100000 --out data/zarrinpal_dataset.csv
+# Generate sample data
+python scripts/seed_demo.py --rows 100000 --out data/sample_data.csv
 
-# Full stack
+# Schema inspection
+python scripts/inspect_schema.py --csv data/sample_data.csv --output docs/data-dictionary.md
+
+# Full stack (Docker)
 docker compose up -d --build
 ```
 
@@ -82,14 +81,12 @@ docker compose up -d --build
 
 ## Environment Configuration
 
-`.env.example` (ریشه) → کپی به `.env`:
+`.env.example` (root) → copy to `.env`:
 
 ```env
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=zarrinpal_secret
-DATABASE_URL=postgresql://postgres:zarrinpal_secret@postgres:5432/zarrinpal
-DATA_FILE=/app/data/zarrinpal_dataset.csv
-DUCKDB_PATH=/app/data/transactions.duckdb
+DATA_FILE=data/sample_data.csv
+DUCKDB_PATH=/app/data/analytics.duckdb
+DEBUG=false
 NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 ```
 
@@ -126,12 +123,11 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 
 ## Analytics Methodology
 
-- **سطح تحلیل**: سشن (dedupe با `session_key`)، نه تلاش، برای متریک‌های تجمیعی.
-- **مقایسه نسبی**: همیشه برای `adjusted_fee` (هرگز مطلق).
-- **ردیابی‌پذیری**: هر نما یک `SELECT` صریح در `process.py` دارد؛ endpoint `/provenance` و پنل UI آن را نمایش می‌دهد.
-- **تحلیل فصلی**: نوروز (اسفند/فروردین) — قبل/حین/بعد.
-- **مقایسه هم‌صنفی**: میانه / صدک ۹۰ / درصد رتبه درون `category_id`.
+- **سطح تحلیل**: تلاش پرداخت، نه سشن، برای متریک‌های سشن-سطحی (aggregate).
+- **مقایسه نسبی**: همواره برای `adjusted_fee` (هرگز مطلق).
+- **ردیابی‌پذیری**: هر متریک یک `SELECT` صریح در DuckDB دارد؛ endpoint `/schema` و `/overview` متادیتای محاسبه را نمایش می‌دهد.
 - **مدیریت null**: ستون‌های کارت/بانک فقط در وضعیت تکمیل‌شده (Verified/Paid/Reversed) پر می‌شوند.
+- **موفقیت تعریف می‌شود**: `session_status IN ('Verified', 'Paid', 'Reversed')`
 
 ---
 
@@ -141,6 +137,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 - Pydantic v2 (`model_config`، نه `Config` کلاس قدیمی)
 - تایپ‌هینت صریح برای توابع عمومی
 - SQL صریح (نه ORM مبهم) برای نماهای تحلیلی — برای ردیابی‌پذیری
+- هر متریک شامل `calculation` (فرمول) و `limitation` (محدودیت) در پاسخ API
 
 ### TypeScript / React
 - کامپوننت‌ها با `function ComponentName() {}`
@@ -148,21 +145,23 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 - `'use client'` فقط وقتی لازم است
 - `cn()` از `@/lib/utils` برای merge کلاس‌ها
 - فرمت اعداد فارسی: `Intl.NumberFormat('fa-IR')` — در `lib/utils.ts`
+- RTL: `dir="rtl"` در layout، فونت Vazirmatn
 
 ---
 
 ## Common Development Tasks
 
 ### افزودن endpoint جدید
-1. منطق در `services/api/app/services/`
-2. روتر در `services/api/app/routers/`
-3. ثبت در `main.py`
+1. منطق در `services/api/app/database.py` یا `services/api/app/services/`
+2. روتر در `services/api/app/api/v1/endpoints/` (اضافه کنید به `__init__.py`)
+3. تست در `services/api/tests/`
 4. تابع در `frontend/lib/api.ts` + کامپوننت در `frontend/components/dashboard/`
 
 ### افزودن نمای تحلیلی جدید
-1. تابع SQL در `services/data-processing/process.py`
-2. endpoint در `analytics.py`
-3. پنل در `frontend/components/dashboard/` + ثبت provenance
+1. تابع در `services/api/app/services/analytics_engine.py`
+2. endpoint در `services/api/app/api/v1/endpoints/__init__.py`
+3. تست در `services/api/tests/`
+4. پنل در `frontend/components/dashboard/` + متادیتای محاسبه
 
 ### بازتولید داده
 ```bash
@@ -173,7 +172,8 @@ python scripts/seed_demo.py --rows 100000
 
 ## Troubleshooting
 
-- **حافظه در ingest**: با `chunksize=10000` و dtype بهینه کنترل می‌شود.
+- **حافظه**: از DuckDB با dtype بهینه کنترل می‌شود؛ برای دیتاست کامل از `chunksize` استفاده کنید.
 - **null در ستون‌های کارت/بانک**: عادی است — فقط در تراکنش تکمیل‌شده پر می‌شود.
 - **build فرانت**: `output: 'standalone'` در `next.config.js` فعال است (برای Docker).
 - **اتصال API**: فرانت `/api/*` را به بک‌اند پروکسی می‌کند (`NEXT_PUBLIC_API_URL`).
+- **mcpgit MCP**: از `Bearer <github_token>` برای GitHub API استفاده کنید.
