@@ -1,19 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Database } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
-import { api, type Provenance } from '@/lib/api'
+import { Database } from 'lucide-react'
 
 export function DataProvenance() {
-  const [rows, setRows] = useState<Provenance[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    api.provenance().then(setRows).catch((e) => setError(e.message))
-  }, [])
-
   return (
     <Card>
       <CardHeader>
@@ -24,26 +14,19 @@ export function DataProvenance() {
         <CardDescription>هر عدد در داشبورد از کجا آمده و چگونه محاسبه شده است</CardDescription>
       </CardHeader>
       <CardContent>
-        {!rows && !error ? (
-          <Skeleton className="h-40 w-full" />
-        ) : error ? (
-          <p className="text-sm text-destructive">{error}</p>
-        ) : (
-          <div className="space-y-2">
-            {rows?.map((p) => (
-              <details key={p.metric} className="rounded-lg border p-3">
-                <summary className="cursor-pointer text-sm font-medium">
-                  {p.metric}: <span className="font-bold" dir="ltr">{p.value}</span>
-                </summary>
-                <div className="mt-2 space-y-1 text-xs text-muted-foreground" dir="ltr">
-                  <p><span className="font-semibold">استعلام:</span> {p.query}</p>
-                  <p><span className="font-semibold">منبع:</span> {p.source}</p>
-                  <p><span className="font-semibold">محاسبه شده در:</span> {p.computed_at}</p>
-                </div>
-              </details>
-            ))}
-          </div>
-        )}
+        <p className="text-sm text-muted-foreground">
+          متادیتای محاسبه برای هر متریک از طریق endpoint <code>/api/v1/overview</code>
+          قابل دسترسی است (فیلد how_calculated). هر عدد در کارت‌های KPI با آیکن
+          علامت سؤال قابل ردیابی است.
+        </p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          برای مثال:
+        </p>
+        <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+          <li><code>total_attempts</code>: COUNT(*) — تعداد ردیف‌های پرداخت (تلاش)</li>
+          <li><code>success_rate</code>: ((paid + verified) / total) × 100</li>
+          <li><code>total_amount</code>: SUM(amount) — مجموع مبلغ به ریال</li>
+        </ul>
       </CardContent>
     </Card>
   )

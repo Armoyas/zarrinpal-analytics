@@ -12,7 +12,13 @@ export function PeerComparison() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    api.peerComparison('sample').then(setData).catch((e) => setError(e.message))
+    // Use a sample merchant from the data for demo
+    api.merchants(1).then((merchants) => {
+      if (merchants.length > 0) {
+        return api.peerComparison(merchants[0].merchant_key)
+      }
+      throw new Error('No merchants found')
+    }).then(setData).catch((e) => setError(e.message))
   }, [])
 
   return (
@@ -22,31 +28,37 @@ export function PeerComparison() {
           <GitCompareArrows className="h-5 w-5 text-indigo-600" />
           مقایسه با کسب‌وکارهای هم‌صنف
         </CardTitle>
-        <CardDescription>موقعیت پذیرنده نسبت به میانه و صدک ۹۰ هم‌صنفی‌ها</CardDescription>
+        <CardDescription>موقعیت پذیرنده نسبت به میانه و درصد رتبه درون هم‌صنفی‌ها</CardDescription>
       </CardHeader>
       <CardContent>
         {!data && !error ? (
-          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-48 w-full" />
         ) : error ? (
           <p className="text-sm text-destructive">{error}</p>
         ) : (
           <div className="space-y-3">
             <div className="flex items-center justify-between rounded-lg border p-3">
-              <span className="text-sm text-muted-foreground">حجم پذیرنده</span>
-              <span className="font-bold" dir="ltr">{formatRials(data?.merchant_amount)}</span>
+              <span className="text-sm text-muted-foreground">حجم پذیرنده (Rial)</span>
+              <span className="font-bold" dir="ltr">{formatRials(data?.my_amount)}</span>
             </div>
             <div className="flex items-center justify-between rounded-lg border p-3">
               <span className="text-sm text-muted-foreground">میانه هم‌صنفی‌ها</span>
-              <span className="font-bold" dir="ltr">{formatRials(data?.peer_median)}</span>
+              <span className="font-bold" dir="ltr">{formatRials(data?.peer_avg_amount)}</span>
             </div>
             <div className="flex items-center justify-between rounded-lg border p-3">
-              <span className="text-sm text-muted-foreground">صدک ۹۰ هم‌صنفی‌ها</span>
-              <span className="font-bold" dir="ltr">{formatRials(data?.peer_p90)}</span>
+              <span className="text-sm text-muted-foreground">نرخ موفقیت هم‌صنفی‌ها</span>
+              <span className="font-bold" dir="ltr">
+                {data?.peer_avg_rate !== null && data?.peer_avg_rate !== undefined
+                  ? `${new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 1 }).format(data.peer_avg_rate)}٪`
+                  : '—'}
+              </span>
             </div>
-            {data?.percentile !== undefined && data?.percentile !== null && (
+            {data?.percentile_rank !== undefined && data?.percentile_rank !== null && (
               <p className="rounded-lg bg-indigo-50 p-3 text-sm text-indigo-900">
-                پذیرنده در صدک{' '}
-                <span className="font-bold">{new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 0 }).format(data.percentile)}</span>{' '}
+                پذیرنده در درصد رتبه{' '}
+                <span className="font-bold" dir="ltr">
+                  {new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 0 }).format(data.percentile_rank)}٪
+                </span>{' '}
                 صنف «{data.category}» قرار دارد.
               </p>
             )}

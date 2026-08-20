@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react'
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { api, type TrendPoint } from '@/lib/api'
+import { api, type DailyTrendPoint } from '@/lib/api'
+import { formatRials } from '@/lib/utils'
+import { Info } from 'lucide-react'
 
 interface ChartDatum {
   label: string
@@ -20,10 +22,10 @@ export function TransactionTrends() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    api.trends(undefined, 90)
-      .then((points: TrendPoint[]) =>
+    api.dailyTrends(undefined, 90)
+      .then((points: DailyTrendPoint[]) =>
         points.map((p) => ({
-          label: p.date.slice(5),
+          label: p.day.slice(5),
           volume: Math.round(p.amount / 1_000_000),
           count: p.count,
           success: p.success_rate,
@@ -36,8 +38,15 @@ export function TransactionTrends() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>روند تراکنش‌ها (۹۰ روز اخیر)</CardTitle>
-        <CardDescription>حجم تراکنش بر حسب میلیون ریال و نرخ موفقیت روزانه</CardDescription>
+        <CardTitle className="flex items-center gap-2">
+          <span>📈</span>
+          روند تراکنش‌ها (۹۰ روز اخیر)
+        </CardTitle>
+        <CardDescription className="flex items-center gap-1">
+          حجم تراکنت بر حسب میلیون ریال و نرخ موفقیت روزانه
+          <Info className="h-3 w-3" />
+          موفقیت = session_status در (Verified، Paid، Reversed)
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {!data && !error ? (
@@ -54,7 +63,7 @@ export function TransactionTrends() {
                 <Tooltip />
                 <Legend />
                 <Line type="monotone" dataKey="volume" name="حجم (میلیون ریال)" stroke="#1a4d8f" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="count" name="تعداد تراکنش" stroke="#0d9488" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="count" name="تعداد تلاش" stroke="#0d9488" strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="success" name="نرخ موفقیت (٪)" stroke="#f59e0b" strokeWidth={1.5} dot={false} />
               </LineChart>
             </ResponsiveContainer>
