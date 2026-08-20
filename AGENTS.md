@@ -33,9 +33,9 @@ services/
 │   └── app/
 │       ├── main.py           # Entry point + router registration
 │       ├── config.py         # Settings based on env
-│       ├── database.py       # DuckDB connection management
-│       ├── api/v1/endpoints/ # health, schema, overview, merchants, trend
-│       └── services/         # analytics_engine, data_processor
+│       ├── db/duckdb_database.py  # DuckDB connection management
+│       ├── api/v1/endpoints/        # health, schema, overview, merchants, trend
+│       └── services/                # analytics_engine, data_processor
 ├── data-processing/          # Independent pipeline (optional)
 │   └── process.py            # Analytical SQL views (explicit queries)
 frontend/

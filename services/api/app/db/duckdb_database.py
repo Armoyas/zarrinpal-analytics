@@ -16,7 +16,6 @@ from typing import Any
 # verified_at, settled_at, expire_in
 
 STATUS_COMPLETED = "'Verified', 'Paid', 'Reversed'"
-STATUS_SUCCESS = "'Paid', 'Verified'"
 STATUS_FAILED = "'Failed'"
 
 
@@ -24,8 +23,11 @@ class DuckDBManager:
     """Manages DuckDB connection and provides data access methods."""
 
     def __init__(self, db_path: str | None = None, csv_path: str | None = None):
-        self.db_path = db_path or "data/analytics.duckdb"
-        self.csv_path = csv_path or "data/sample_data.csv"
+        # Resolve paths relative to project root (four levels up from this file:
+        # app/db/ -> app/ -> api/ -> services/api/ -> services/ -> project root)
+        project_root = Path(__file__).resolve().parents[4]
+        self.db_path = db_path or str(project_root / "data" / "analytics.duckdb")
+        self.csv_path = csv_path or str(project_root / "data" / "sample_data.csv")
         self._conn = None
 
     def get_connection(self) -> duckdb.DuckDBPyConnection:
@@ -183,7 +185,7 @@ class DuckDBManager:
     def get_merchants(
         self,
         limit: int = 50,
-        min_attempts: int = 100,
+        min_attempts: int = 1,
         start_date: str | None = None,
         end_date: str | None = None,
     ) -> list[dict[str, Any]]:
@@ -215,8 +217,8 @@ class DuckDBManager:
             AVG(amount) as avg_amount,
             SUM(adjusted_fee) as total_adjusted_fee,
             ROUND(
-                CAST(SUM(CASE WHEN session_status = 'Paid' THEN 1 ELSE 0 END) AS FLOAT) /
-                NULLIF(COUNT(*), 0) * 100, 2
+                CAST(SUM(CASE WHEN session_status = 'Paid' THEN 1 ELSE 0 END) AS FLOAT) * 100.0
+                / NULLIF(COUNT(*), 0), 2
             ) as success_rate_pct
         FROM payments
         WHERE {where_sql}
@@ -231,7 +233,14 @@ class DuckDBManager:
         rows = conn.execute(query, params).fetchall()
         labels = [desc[0] for desc in conn.description]
 
-        return [dict(zip(labels, row)) for row in rows]
+        results = []
+        for row in rows:
+            d = dict(zip(labels, row))
+            # Convert date objects to ISO format strings for JSON serialization
+            if d.get("time_period") is not None and hasattr(d["time_period"], "strftime"):
+                d["time_period"] = d["time_period"].strftime("%Y-%m-%d")
+            results.append(d)
+        return results
 
     def get_peer_comparison(self, merchant_key: str) -> dict[str, Any]:
         """Compare a merchant against its category peers using real CSV columns."""
@@ -339,7 +348,14 @@ class DuckDBManager:
         rows = conn.execute(query, params).fetchall()
         labels = [desc[0] for desc in conn.description]
 
-        return [dict(zip(labels, row)) for row in rows]
+        results = []
+        for row in rows:
+            d = dict(zip(labels, row))
+            # Convert date objects to ISO format strings for JSON serialization
+            if d.get("day") is not None and hasattr(d["day"], "strftime"):
+                d["day"] = d["day"].strftime("%Y-%m-%d")
+            results.append(d)
+        return results
 
     def get_time_series(
         self,
@@ -411,4 +427,11 @@ class DuckDBManager:
         rows = conn.execute(query, params).fetchall()
         labels = [desc[0] for desc in conn.description]
 
-        return [dict(zip(labels, row)) for row in rows]
+        results = []
+        for row in rows:
+            d = dict(zip(labels, row))
+            # Convert date objects to ISO format strings for JSON serialization
+            if d.get("time_period") is not None and hasattr(d["time_period"], "strftime"):
+                d["time_period"] = d["time_period"].strftime("%Y-%m-%d")
+            results.append(d)
+        return results

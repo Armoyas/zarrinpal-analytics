@@ -8,7 +8,7 @@ All endpoints use the REAL CSV schema:
 """
 
 from fastapi import APIRouter, HTTPException, Query
-from typing import Annotated
+from typing import Optional
 
 from app.db.duckdb_database import DuckDBManager
 from app.schemas import (
@@ -18,9 +18,11 @@ from app.schemas import (
     TimeSeriesPoint,
 )
 from app.config import get_settings
+from app.api.v1.endpoints.metrics import router as metrics_router
 
 router = APIRouter()
 db = DuckDBManager()
+router.include_router(metrics_router)
 
 
 @router.get("/health", response_model=HealthResponse)
@@ -44,9 +46,9 @@ async def status_distribution():
 
 @router.get("/overview", response_model=OverviewMetrics)
 async def overview(
-    start_date: Annotated[str | None, Query(description="ISO date: 2024-01-01")] = None,
-    end_date: Annotated[str | None, Query(description="ISO date: 2024-12-31")] = None,
-    merchant_key: Annotated[str | None, Query(description="Filter by merchant_key")] = None,
+    start_date: Optional[str] = Query(default=None, description="ISO date: 2024-01-01"),
+    end_date: Optional[str] = Query(default=None, description="ISO date: 2024-12-31"),
+    merchant_key: Optional[str] = Query(default=None, description="Filter by merchant_key"),
 ):
     """Get overview KPIs based on confirmed CSV columns.
 
@@ -58,10 +60,10 @@ async def overview(
 
 @router.get("/merchants", response_model=list[MerchantOverview])
 async def merchants(
-    limit: Annotated[int, Query(default=50)] = 50,
-    min_attempts: Annotated[int, Query(default=100)] = 100,
-    start_date: Annotated[str | None, Query()] = None,
-    end_date: Annotated[str | None, Query()] = None,
+    limit: int = Query(default=50),
+    min_attempts: int = Query(default=1),
+    start_date: Optional[str] = Query(default=None),
+    end_date: Optional[str] = Query(default=None),
 ):
     """Get merchant rankings based on real CSV columns.
 
@@ -85,11 +87,11 @@ async def peer_comparison(merchant_key: str):
 
 @router.get("/time-series", response_model=list[TimeSeriesPoint])
 async def time_series(
-    metric: Annotated[str, Query(default="attempts")] = "attempts",
-    interval: Annotated[str, Query(default="day")] = "day",
-    start_date: Annotated[str | None, Query()] = None,
-    end_date: Annotated[str | None, Query()] = None,
-    merchant_key: Annotated[str | None, Query()] = None,
+    metric: str = Query(default="attempts"),
+    interval: str = Query(default="day"),
+    start_date: Optional[str] = Query(default=None),
+    end_date: Optional[str] = Query(default=None),
+    merchant_key: Optional[str] = Query(default=None),
 ):
     """Get time series data based on real CSV columns.
 
@@ -104,8 +106,8 @@ async def time_series(
 
 @router.get("/time-series/daily-trends")
 async def daily_trends(
-    merchant_key: Annotated[str | None, Query()] = None,
-    days: Annotated[int, Query(default=90, ge=1, le=365)] = 90,
+    merchant_key: Optional[str] = Query(default=None),
+    days: int = Query(default=90, ge=1, le=365),
 ):
     """Get daily volume, count, and success-rate trend.
 

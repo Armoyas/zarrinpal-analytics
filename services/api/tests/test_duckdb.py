@@ -14,7 +14,7 @@ from duckdb_database import DuckDBManager
 def db_manager():
     """Create a DuckDB manager instance for testing."""
     csv_path = os.path.join(
-        Path(__file__).resolve().parent.parent.parent.parent,
+        Path(__file__).resolve().parents[3],
         "data", "sample_data.csv"
     )
     db = DuckDBManager(
@@ -129,3 +129,29 @@ def test_adjusted_fee_not_presented_as_real(db_manager):
     metrics = db_manager.get_overview_metrics()
     assert metrics["adjusted_fee_total"] > 0
     assert "not" in metrics["fee_note"].lower() or "scaled" in metrics["fee_note"].lower()
+
+
+def test_peer_comparison(db_manager):
+    """Test peer comparison uses real CSV columns."""
+    merchants = db_manager.get_merchants(limit=5, min_attempts=10)
+    assert len(merchants) > 0
+    merchant_key = merchants[0]["merchant_key"]
+    result = db_manager.get_peer_comparison(merchant_key)
+    assert "error" not in result
+    assert "my_amount" in result
+    assert "peer_avg_amount" in result
+    assert "percentile_rank" in result
+    assert "category" in result
+    assert result["merchant_key"] == merchant_key
+
+
+def test_daily_trends(db_manager):
+    """Test daily trends time-series uses real CSV columns."""
+    trends = db_manager.get_daily_trends(days=30)
+    assert len(trends) > 0
+    first = trends[0]
+    assert "day" in first
+    assert "count" in first
+    assert "amount" in first
+    assert "success_rate" in first
+    assert first["success_rate"] >= 0

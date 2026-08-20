@@ -13,6 +13,11 @@ data/*.duckdb.wal
 # Sample dataset (Phase 0) — small, safe to commit
 !data/sample_data.csv
 
+# Backend DuckDB database files (runtime artifacts)
+services/api/data/*.duckdb
+services/api/data/*.duckdb.wal
+services/api/data/test*.duckdb
+
 # Frontend (Node / Next.js)
 frontend/node_modules/
 frontend/.next/
