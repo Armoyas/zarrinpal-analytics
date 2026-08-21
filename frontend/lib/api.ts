@@ -119,6 +119,10 @@ export const api = {
     request<PeerComparison>(`/api/v1/merchants/${merchantKey}/peer-comparison`),
   timeSeries: (metric = 'attempts', interval = 'day', merchantKey?: string) =>
     request<TrendPoint[]>(`/api/v1/time-series?metric=${metric}&interval=${interval}${merchantKey ? `&merchant_key=${merchantKey}` : ''}`),
-  dailyTrends: (merchantKey?: string, days = 90) =>
-    request<DailyTrendPoint[]>(`/api/v1/time-series/daily-trends${merchantKey ? `?merchant_key=${merchantKey}` : ''}&days=${days}`),
+  dailyTrends: (merchantKey?: string, days = 90) => {
+    const params = new URLSearchParams()
+    if (merchantKey) params.set('merchant_key', merchantKey)
+    params.set('days', String(days))
+    return request<DailyTrendPoint[]>(`/api/v1/time-series/daily-trends?${params.toString()}`)
+  },
 }

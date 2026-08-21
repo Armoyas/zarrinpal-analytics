@@ -128,7 +128,12 @@ zarrinpal-analytics/
 │   ├── setup.md              # Full setup guide
 │   └── demo-script.md        # Demo video script
 ├── specs/
-│   └── 001-foundation-overview/spec.md  # SDD specification
+│   └── phase-0-schema-foundation/
+│       └── spec.md               # Foundation specification (SDD)
+│   └── phase-1-api-foundation/
+│       └── spec.md               # API specification (SDD)
+│   └── phase-2-dashboard-ui/
+│       └── spec.md               # Dashboard UI specification (SDD)
 ├── AGENTS.md                 # AI coding agent reference
 ├── CLAUDE.md                 # Quick reference for Claude
 ├── .gitignore
@@ -155,7 +160,9 @@ Every analytical metric is expressed as an **explicit SQL query** using DuckDB. 
 | [docs/demo-script.md](docs/demo-script.md) | Demo video script |
 | [docs/data-dictionary.md](docs/data-dictionary.md) | Confirmed CSV column data dictionary |
 | [docs/schema-summary.json](docs/schema-summary.json) | Machine-readable schema |
-| [specs/001-foundation-overview/spec.md](specs/001-foundation-overview/spec.md) | Foundation specification (SDD) |
+| [specs/phase-0-schema-foundation/spec.md](specs/phase-0-schema-foundation/spec.md) | Phase 0: Foundation & schema specification (SDD) |
+| [specs/phase-1-api-foundation/spec.md](specs/phase-1-api-foundation/spec.md) | Phase 1: API specification (SDD) |
+| [specs/phase-2-dashboard-ui/spec.md](specs/phase-2-dashboard-ui/spec.md) | Phase 2: Dashboard UI specification (SDD) |
 
 ---
 

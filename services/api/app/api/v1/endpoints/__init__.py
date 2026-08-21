@@ -18,11 +18,9 @@ from app.schemas import (
     TimeSeriesPoint,
 )
 from app.config import get_settings
-from app.api.v1.endpoints.metrics import router as metrics_router
 
 router = APIRouter()
 db = DuckDBManager()
-router.include_router(metrics_router)
 
 
 @router.get("/health", response_model=HealthResponse)
