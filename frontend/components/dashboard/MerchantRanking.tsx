@@ -1,72 +1,123 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Info } from 'lucide-react'
+import { Info, Trophy } from 'lucide-react'
 import { api, type MerchantSummary } from '@/lib/api'
-import { formatRials, formatPercent } from '@/lib/utils'
+import { cn, formatRials, formatNumber, formatPercent } from '@/lib/utils'
+
+function RankBadge({ rank }: { rank: number }) {
+  const styles: Record<number, string> = {
+    1: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/30',
+    2: 'bg-slate-400/15 text-slate-500 dark:text-slate-300 ring-1 ring-slate-400/30',
+    3: 'bg-orange-700/15 text-orange-700 dark:text-orange-400 ring-1 ring-orange-700/30',
+  }
+  return (
+    <span
+      className={cn(
+        'num inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold',
+        styles[rank] ?? 'text-muted-foreground'
+      )}
+    >
+      {formatNumber(rank)}
+    </span>
+  )
+}
+
+function SuccessCell({ rate }: { rate: number }) {
+  const variant = rate >= 90 ? 'success' : rate >= 70 ? 'warning' : 'destructive'
+  const barColor = rate >= 90 ? 'bg-emerald-500' : rate >= 70 ? 'bg-amber-500' : 'bg-red-500'
+  return (
+    <div className="flex min-w-[120px] flex-col gap-1.5">
+      <Badge variant={variant} className="w-fit">
+        <span className="num">{formatPercent(rate)}</span>
+      </Badge>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div className={cn('h-full rounded-full transition-all', barColor)} style={{ width: `${rate}%` }} />
+      </div>
+    </div>
+  )
+}
 
 export function MerchantRanking() {
   const [rows, setRows] = useState<MerchantSummary[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    api.merchants(20)
+    api
+      .merchants(20)
       .then(setRows)
       .catch((e) => setError(e.message))
   }, [])
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
-        <CardTitle>رتبه‌بندی پذیرنده‌ها</CardTitle>
-        <CardDescription>
-          مقایسه نسبی پذیرنده‌ها بر اساس حجم و نرخ موفقیت — سهم کارمزد تنها برای مقایسه نسبی معتبر است
-          <span className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-            <Info className="h-3 w-3" />
-            adjusted_fee یک مقدار کارمزد تنظیم‌شده است، فقط روابط نسبی معتبر است
-          </span>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-amber-500" />
+            رتبه‌بندی پذیرنده‌ها
+          </CardTitle>
+          <Badge variant="gold">
+            <span className="num">{rows ? formatNumber(rows.length) : '—'}</span> پذیرنده
+          </Badge>
+        </div>
+        <CardDescription className="flex items-center gap-1.5">
+          <Info className="h-3.5 w-3.5" />
+          سهم کارمزد تنها برای مقایسه نسبی معتبر است (adjusted_fee تنظیم‌شده)
         </CardDescription>
       </CardHeader>
       <CardContent>
         {!rows && !error ? (
           <Skeleton className="h-64 w-full" />
         ) : error ? (
-          <p className="text-sm text-destructive">{error}</p>
+          <div className="flex h-64 items-center justify-center text-sm text-destructive">خطا: {error}</div>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>#</TableHead>
-                  <TableHead>پذیرنده</TableHead>
-                  <TableHead>صنف</TableHead>
-                  <TableHead>حجم (ریال)</TableHead>
-                  <TableHead>تعداد</TableHead>
-                  <TableHead>نرخ موفقیت</TableHead>
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="w-12">#</TableHead>
+                <TableHead>پذیرنده</TableHead>
+                <TableHead className="hidden sm:table-cell">صنف</TableHead>
+                <TableHead>حجم (ریال)</TableHead>
+                <TableHead className="hidden md:table-cell">تعداد تلاش</TableHead>
+                <TableHead>نرخ موفقیت</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows?.map((r, i) => (
+                <TableRow key={r.merchant_key}>
+                  <TableCell>
+                    <RankBadge rank={i + 1} />
+                  </TableCell>
+                  <TableCell>
+                    <span className="num font-mono text-xs font-semibold text-foreground" dir="ltr">
+                      {r.merchant_key}
+                    </span>
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    <span className="rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                      {r.category_title ?? '—'}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="num text-sm font-medium" dir="ltr">
+                      {formatRials(r.total_amount)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    <span className="num text-sm text-muted-foreground">{formatNumber(r.total_attempts)}</span>
+                  </TableCell>
+                  <TableCell>
+                    <SuccessCell rate={r.success_rate_pct} />
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows?.map((r, i) => (
-                  <TableRow key={r.merchant_key}>
-                    <TableCell className="font-medium">{new Intl.NumberFormat('fa-IR').format(i + 1)}</TableCell>
-                    <TableCell dir="ltr" className="font-mono text-xs">{r.merchant_key}</TableCell>
-                    <TableCell>{r.category_title ?? '—'}</TableCell>
-                    <TableCell dir="ltr">{formatRials(r.total_amount)}</TableCell>
-                    <TableCell>{new Intl.NumberFormat('fa-IR').format(r.total_attempts)}</TableCell>
-                    <TableCell>
-                      <Badge variant={r.success_rate_pct >= 90 ? 'success' : r.success_rate_pct >= 70 ? 'warning' : 'destructive'}>
-                        {formatPercent(r.success_rate_pct)}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </CardContent>
     </Card>
