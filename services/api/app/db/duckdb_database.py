@@ -23,8 +23,10 @@ class DuckDBManager:
     """Manages DuckDB connection and provides data access methods."""
 
     def __init__(self, db_path: str | None = None, csv_path: str | None = None):
-        # Resolve paths relative to project root (four levels up from this file:
-        # app/db/ -> app/ -> api/ -> services/api/ -> services/ -> project root)
+        # Resolve paths relative to project root.
+        # File location: services/api/app/db/duckdb_database.py
+        # parents[0]=db/ parents[1]=app/ parents[2]=api/
+        # parents[3]=services/api/ parents[4]=project root
         project_root = Path(__file__).resolve().parents[4]
         self.db_path = db_path or str(project_root / "data" / "analytics.duckdb")
         self.csv_path = csv_path or str(project_root / "data" / "sample_data.csv")
@@ -192,17 +194,17 @@ class DuckDBManager:
         """Get merchant rankings based on real CSV columns."""
         conn = self.get_connection()
 
-        where_clauses = ["1=1"]
+        where_conditions = ["1=1"]
         params = []
 
         if start_date:
-            where_clauses.append("CAST(created_at AS DATE) >= CAST(? AS DATE)")
+            where_conditions.append("CAST(created_at AS DATE) >= CAST(? AS DATE)")
             params.append(start_date)
         if end_date:
-            where_clauses.append("CAST(created_at AS DATE) <= CAST(? AS DATE)")
+            where_conditions.append("CAST(created_at AS DATE) <= CAST(? AS DATE)")
             params.append(end_date)
 
-        where_sql = " AND ".join(where_clauses)
+        where_sql = " AND ".join(where_conditions)
 
         query = f"""
         SELECT
@@ -236,7 +238,6 @@ class DuckDBManager:
         results = []
         for row in rows:
             d = dict(zip(labels, row))
-            # Convert date objects to ISO format strings for JSON serialization
             if d.get("time_period") is not None and hasattr(d["time_period"], "strftime"):
                 d["time_period"] = d["time_period"].strftime("%Y-%m-%d")
             results.append(d)
@@ -340,7 +341,7 @@ class DuckDBManager:
             WHERE CAST(created_at AS DATE) >= (
                 SELECT MAX(CAST(created_at AS DATE)) - INTERVAL {days} DAY FROM payments
             )
-            {where_clause.replace("WHERE ", "AND ")}
+            {where_clause}
             GROUP BY CAST(created_at AS DATE)
             ORDER BY day
         """
@@ -351,7 +352,6 @@ class DuckDBManager:
         results = []
         for row in rows:
             d = dict(zip(labels, row))
-            # Convert date objects to ISO format strings for JSON serialization
             if d.get("day") is not None and hasattr(d["day"], "strftime"):
                 d["day"] = d["day"].strftime("%Y-%m-%d")
             results.append(d)
@@ -430,7 +430,6 @@ class DuckDBManager:
         results = []
         for row in rows:
             d = dict(zip(labels, row))
-            # Convert date objects to ISO format strings for JSON serialization
             if d.get("time_period") is not None and hasattr(d["time_period"], "strftime"):
                 d["time_period"] = d["time_period"].strftime("%Y-%m-%d")
             results.append(d)
