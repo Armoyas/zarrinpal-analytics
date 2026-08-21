@@ -34,7 +34,7 @@ jobs:
 
       - name: Run tests
         run: |
-          PYTHONPATH=. pytest tests/ -v
+          PYTHONPATH=.:./app/db pytest tests/ -v
 
       - name: Run type-check
         run: |
