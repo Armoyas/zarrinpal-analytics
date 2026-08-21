@@ -3,6 +3,7 @@
 # Server: 62.60.198.209 (Test)
 # Usage: curl -s https://raw.githubusercontent.com/Armoyas/zarrinpal-analytics/main/deploy.sh | bash
 # Or with Docker: curl -s https://raw.githubusercontent.com/Armoyas/zarrinpal-analytics/main/deploy.sh | bash -s -- --docker
+# Or Docker-only: ssh root@62.60.198.209 "apt-get update -qq && apt-get install -y -qq docker.io docker-compose && curl -s https://raw.githubusercontent.com/Armoyas/zarrinpal-analytics/main/deploy.sh | bash -s -- --docker"
 
 set -e
 
@@ -21,12 +22,19 @@ apt-get upgrade -y -qq
 
 # Install prerequisites
 echo "Installing prerequisites..."
-apt-get install -y -qq python3 python3-pip python3-venv nginx curl git unzip
+apt-get install -y -qq python3 python3-pip python3-venv nginx curl git unzip docker.io docker-compose
 
 # Install Node.js 20.x
 echo "Installing Node.js..."
 curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
 apt-get install -y -qq nodejs
+
+# Start Docker
+if command -v docker &> /dev/null; then
+    echo "Starting Docker..."
+    systemctl start docker || service docker start
+    usermod -aG docker root
+fi
 
 # Create app directory
 echo "Setting up application directory..."
