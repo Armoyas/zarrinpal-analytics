@@ -28,14 +28,10 @@ jobs:
         run: |
           pip install fastapi uvicorn duckdb pandas pytest pytest-cov
 
-      - name: Generate sample data
-        run: |
-          python ../../scripts/seed_demo.py --rows 50000 --out data/sample_data.csv
-
       - name: Run tests
         run: |
           PYTHONPATH=.:./app/db pytest tests/ -v
 
       - name: Run type-check
         run: |
-          python -c "import duckdb_database; print('Import OK')"
+          PYTHONPATH=.:./app/db python -c "import duckdb_database; print('Import OK')"
