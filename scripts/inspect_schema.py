@@ -41,16 +41,16 @@ def infer_type(series, col_name=None):
         pass
 
     # Datetime?
-    if col_name in ("created_at", "try_created_at", "verified_at", "settled_at"):
+    if col_name in ("created_at", "try_created_at", "verified_at", "settled_at", "expire_in"):
         try:
             sample.apply(pd.to_datetime)
             return "datetime"
         except Exception:
             pass
-    # For other columns, check if they look like timestamps (ISO format with T)
+    # For other columns, check if they look like timestamps (ISO or space-separated)
     else:
         sample_str = non_null.head(1000).astype(str)
-        if sample_str.str.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}').any():
+        if sample_str.str.match(r'^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}').any():
             return "datetime"
 
     return "string"
@@ -167,11 +167,12 @@ def main():
     md_lines.extend([
         "## Key Findings",
         "",
-        "- **Date column:** `created_at` (ISO 8601 datetime)",
+        "- **Date column:** `created_at` (datetime, space-separated format)",
         "- **Merchant identifier:** `merchant_key`",
-        "- **Amount column:** `amount` (Rials)",
+        "- **Amount column:** `amount` (IRR - Iranian Rial)",
+        "- **Currency:** IRR (Iranian Rial, ISO 4217)",
         f"- **Status column:** `session_status` with values: {', '.join(str(v) for v in df['session_status'].unique()) if 'session_status' in df.columns else 'N/A'}",
-        "- **adjusted_fee:** Scaled value — relative comparisons only",
+        "- **adjusted_fee:** Confidentiality-scaled value — relative comparisons only (NOT actual ZarinPal fee)",
         "- **No reliable `customer_id` column found**",
         "- **No reliable `product_id` column found**",
         "",

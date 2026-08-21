@@ -3,6 +3,9 @@
 **Source file:** `smaple.csv`
 **Rows:** 19,999
 **Columns:** 22
+**Currency:** Iranian rial (IRR)
+**adjust_fee note:** The `adjusted_fee` column is confidentiality-scaled and must not be presented as the real
+ZarinPal fee. Relative comparisons remain valid.
 
 ### `session_key`
 - **Type:** integer

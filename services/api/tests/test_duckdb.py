@@ -68,7 +68,7 @@ def test_overview_metrics(db_manager):
     assert "failed" in attempts
 
     # Amount in Rials
-    assert metrics["amount"]["currency"] == "Rial"
+    assert metrics["amount"]["currency"] == "IRR"
 
     # adjusted_fee note
     assert "adjusted_fee" in metrics["fee_note"]

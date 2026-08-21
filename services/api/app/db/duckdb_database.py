@@ -170,7 +170,7 @@ class DuckDBManager:
             "amount": {
                 "total_rials": metrics.get("total_amount", 0),
                 "avg_per_attempt_rials": round(metrics.get("avg_amount", 0), 0),
-                "currency": "Rial",
+                "currency": "IRR",
             },
             "adjusted_fee_total": metrics.get("total_adjusted_fee", 0),
             "fee_note": "adjusted_fee is a confidentiality-scaled value. Only relative comparisons are valid.",
