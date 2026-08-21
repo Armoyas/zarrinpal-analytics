@@ -49,8 +49,14 @@ apt-get install -y -qq --no-install-recommends nodejs
 # Start Docker
 if command -v docker &> /dev/null; then
     echo "Starting Docker..."
-    systemctl start docker || service docker start
-    usermod -aG docker root
+    if command -v systemctl &> /dev/null && pidof systemd &> /dev/null; then
+        systemctl start docker
+    elif [ -S /var/run/docker.sock ]; then
+        echo "Docker daemon already running"
+    else
+        (dockerd &) || (service docker start) || echo "Docker may already be running"
+    fi
+    usermod -aG docker root 2>/dev/null || true
 fi
 
 # Create app directory
