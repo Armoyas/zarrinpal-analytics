@@ -324,9 +324,14 @@ class DuckDBManager:
             conditions.append("merchant_key = ?")
             params.append(merchant_key)
 
+        conditions_with_dates = [
+            "CAST(created_at AS DATE) >= (SELECT MAX(CAST(created_at AS DATE)) - INTERVAL %d DAY FROM payments)" % days
+        ]
+        conditions_with_dates.extend(conditions)
+
         where_clause = ""
-        if conditions:
-            where_clause = "WHERE " + " AND ".join(conditions)
+        if conditions_with_dates:
+            where_clause = "WHERE " + " AND ".join(conditions_with_dates)
 
         query = f"""
             SELECT
@@ -338,9 +343,6 @@ class DuckDBManager:
                     / NULLIF(COUNT(*), 0), 2
                 ) AS success_rate
             FROM payments
-            WHERE CAST(created_at AS DATE) >= (
-                SELECT MAX(CAST(created_at AS DATE)) - INTERVAL {days} DAY FROM payments
-            )
             {where_clause}
             GROUP BY CAST(created_at AS DATE)
             ORDER BY day
