@@ -41,7 +41,8 @@ echo "Setting up application directory..."
 mkdir -p /var/www/zarrinpal
 cd /var/www/zarrinpal
 
-# Clone/update repository
+# Clone/update repository (using credential helper or token from .env)
+# This script can be run directly on the server after git config credential setup
 if [ -d ".git" ]; then
     echo "Updating existing repository..."
     git pull origin main
