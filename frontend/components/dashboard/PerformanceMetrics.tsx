@@ -1,19 +1,22 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Wallet, CheckCircle2, Percent, CalendarDays, TrendingUp, HelpCircle } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Wallet, TrendingUp, CheckCircle2, Percent, Fingerprint, HelpCircle } from 'lucide-react'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { api, type OverviewMetrics } from '@/lib/api'
-import { formatRials, formatPercent } from '@/lib/utils'
+import { formatRials, formatNumber, formatPercent } from '@/lib/utils'
 
 interface Kpi {
+  key: string
   title: string
   value: string
   hint: string
   icon: React.ElementType
   iconClass: string
+  status?: { label: string; variant: 'success' | 'warning' | 'destructive' }
   howCalculated?: string
 }
 
@@ -22,105 +25,120 @@ export function PerformanceMetrics() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    api.overview()
+    api
+      .overview()
       .then(setData)
       .catch((e) => setError(e.message))
   }, [])
 
-  const getKpi = (key: string, label: string, hint: string, icon: React.ElementType, iconClass: string): Kpi => {
-    const calc = data?.how_calculated?.[key]
-    return {
-      title: label,
-      value: '—',
-      hint,
-      icon,
-      iconClass,
-      howCalculated: calc,
-    }
-  }
+  const feeShare = data ? (data.adjusted_fee_total / data.amount.total_rials) * 100 : null
 
   const kpis: Kpi[] = [
     {
+      key: 'total_amount',
       title: 'حجم تراکنش',
       value: data ? formatRials(data.amount.total_rials) : '—',
-      hint: data ? data.amount.currency : 'ریال',
+      hint: data ? `${data.amount.currency} · مجموع مبلغ` : 'ریال',
       icon: Wallet,
-      iconClass: 'bg-blue-100 text-blue-700',
+      iconClass: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
       howCalculated: data?.how_calculated?.total_amount,
     },
     {
-      title: 'تعداد تلاش',
-      value: data ? new Intl.NumberFormat('fa-IR').format(data.total_attempts) : '—',
-      hint: 'تلاش پرداخت',
+      key: 'total_attempts',
+      title: 'تعداد تلاش پرداخت',
+      value: data ? formatNumber(data.total_attempts) : '—',
+      hint: 'تلاش پرداخت ثبت‌شده',
       icon: TrendingUp,
-      iconClass: 'bg-indigo-100 text-indigo-700',
+      iconClass: 'bg-teal-500/15 text-teal-600 dark:text-teal-400',
       howCalculated: data?.how_calculated?.total_attempts,
     },
     {
+      key: 'success_rate',
       title: 'نرخ موفقیت',
       value: data ? formatPercent(data.success_rate) : '—',
-      hint: 'Verified+Paid / کل',
+      hint: 'Verified + Paid / کل تلاش‌ها',
       icon: CheckCircle2,
-      iconClass: 'bg-emerald-100 text-emerald-700',
+      iconClass: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+      status: data
+        ? data.success_rate >= 90
+          ? { label: 'عالی', variant: 'success' }
+          : data.success_rate >= 70
+            ? { label: 'قابل قبول', variant: 'warning' }
+            : { label: 'نیازمند توجه', variant: 'destructive' }
+        : undefined,
       howCalculated: data?.how_calculated?.success_rate,
     },
     {
+      key: 'fee_share',
       title: 'سهم کارمزد',
-      value: data ? formatPercent((data.adjusted_fee_total / data.amount.total_rials) * 100) : '—',
-      hint: 'adjust. fee / حجم — نسبی',
+      value: feeShare !== null ? formatPercent(feeShare) : '—',
+      hint: 'تنها برای مقایسه نسبی معتبر است',
       icon: Percent,
-      iconClass: 'bg-amber-100 text-amber-700',
-      howCalculated: 'SUM(adjusted_fee) / SUM(amount) * 100 — نسبی فقط (کارمزد تنظیم شده)',
+      iconClass: 'bg-orange-500/15 text-orange-600 dark:text-orange-400',
+      howCalculated: 'SUM(adjusted_fee) / SUM(amount) × 100 — نسبی فقط (کارمزد تنظیم‌شده)',
     },
     {
-      title: 'روزهای فعال',
-      hint: 'روز',
-      icon: CalendarDays,
-      iconClass: 'bg-rose-100 text-rose-700',
-      value: data ? new Intl.NumberFormat('fa-IR').format(data.payment_attempts.total - data.payment_attempts.failed) : '—',
+      key: 'unique_sessions',
+      title: 'نشست‌های یکتا',
+      value: data ? formatNumber(data.unique_sessions) : '—',
+      hint: 'نشست پرداخت منحصربه‌فرد',
+      icon: Fingerprint,
+      iconClass: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400',
+      howCalculated: data?.how_calculated?.unique_sessions,
     },
   ]
 
   return (
     <div>
-      <h2 className="mb-3 text-lg font-bold">نمای کلی پذیرنده</h2>
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-base font-bold">شاخص‌های کلیدی عملکرد</h3>
+        {error && <p className="text-xs text-destructive">خطا در دریافت داده‌ها</p>}
+      </div>
       <TooltipProvider>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {kpis.map((kpi) => (
-            <Card key={kpi.title} className="overflow-hidden">
+            <Card key={kpi.key} className="card-hover overflow-hidden bg-gradient-to-b from-primary/[0.06] to-card">
               <CardHeader className="pb-2">
-                <CardTitle className="flex items-center justify-between text-sm font-medium text-muted-foreground">
-                  <span className={`rounded-md p-1.5 ${kpi.iconClass}`}>
-                    <kpi.icon className="h-4 w-4" />
-                  </span>
-                  {kpi.title}
-                  {kpi.howCalculated && (
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <HelpCircle className="h-3 w-3 text-muted-foreground/50" />
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs text-xs">
-                        {kpi.howCalculated}
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                </CardTitle>
+                <div className="flex items-start justify-between">
+                  <CardDescription className="font-medium text-muted-foreground">{kpi.title}</CardDescription>
+                  <div className="flex items-center gap-1.5">
+                    {kpi.status && <Badge variant={kpi.status.variant}>{kpi.status.label}</Badge>}
+                    {kpi.howCalculated && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button className="text-muted-foreground/40 transition-colors hover:text-primary">
+                            <HelpCircle className="h-3.5 w-3.5" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          {kpi.howCalculated}
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pb-1">
                 {!data && !error ? (
                   <Skeleton className="h-8 w-24" />
                 ) : (
-                  <>
-                    <div className="text-xl font-bold sm:text-2xl" dir="ltr">{kpi.value}</div>
-                    <p className="mt-1 text-xs text-muted-foreground">{kpi.hint}</p>
-                  </>
+                  <div className="num text-2xl font-extrabold leading-tight tracking-tight" dir="ltr">
+                    {kpi.value}
+                  </div>
                 )}
               </CardContent>
+              <CardFooter className="pt-0">
+                <div className="flex items-center gap-2">
+                  <span className={`rounded-lg p-1.5 ${kpi.iconClass}`}>
+                    <kpi.icon className="h-4 w-4" />
+                  </span>
+                  <p className="truncate text-xs text-muted-foreground">{kpi.hint}</p>
+                </div>
+              </CardFooter>
             </Card>
           ))}
         </div>
       </TooltipProvider>
-      {error && <p className="mt-2 text-sm text-destructive">خطا در دریافت داده‌ها: {error}</p>}
     </div>
   )
 }
