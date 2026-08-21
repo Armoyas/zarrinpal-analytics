@@ -13,21 +13,38 @@ if [ "$1" = "--docker" ]; then
 fi
 
 echo "=== ZarrinPal Analytics Deployment ==="
-echo "Mode: $(${DOCKER_MODE} && echo 'Docker' || echo 'Direct')"
+echo "Mode: $([ "$DOCKER_MODE" = "true" ] && echo 'Docker' || echo 'Direct')"
 
 # Update system
 echo "Updating system packages..."
 apt-get update -qq
 apt-get upgrade -y -qq
 
-# Install prerequisites
+# Install prerequisites (without Docker — Docker can have conflicts on some distros)
 echo "Installing prerequisites..."
-apt-get install -y -qq python3 python3-pip python3-venv nginx curl git unzip docker.io docker-compose
+apt-get install -y -qq --no-install-recommends python3 python3-pip python3-venv nginx curl git unzip
+
+# Install Docker separately (handles conflicts gracefully)
+echo "Setting up Docker..."
+if ! command -v docker &> /dev/null; then
+    # Try docker.io first (Debian package)
+    apt-get install -y -qq docker.io 2>/dev/null || {
+        echo "docker.io failed, trying docker-ce..."
+        curl -fsSL https://get.docker.com | sh -s -- --daemon
+    }
+fi
+
+# Docker Compose (v2 built-in via docker compose, plus standalone fallback)
+if ! docker compose version &> /dev/null 2>&1; then
+    apt-get install -y -qq docker-compose 2>/dev/null || {
+        echo "docker-compose package unavailable, using docker compose plugin"
+    }
+fi
 
 # Install Node.js 20.x
 echo "Installing Node.js..."
 curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-apt-get install -y -qq nodejs
+apt-get install -y -qq --no-install-recommends nodejs
 
 # Start Docker
 if command -v docker &> /dev/null; then
