@@ -18,7 +18,7 @@
 
 | Layer | Tech |
 |---|---|
-| Frontend | Next.js 14 (App Router) · React 18 · TypeScript · shadcn/ui · Tailwind CSS v3 · Recharts |
+| Frontend | Next.js 14/16 (App Router) · React 18/19 · TypeScript · shadcn/ui (50+ components) · Tailwind CSS v4 · TanStack Query v5 · Recharts · Vazirmatn (RTL) |
 | Backend | FastAPI · DuckDB (direct CSV querying) · Pydantic v2 |
 | Data | DuckDB (CSV direct read, no intermediate PostgreSQL) |
 | Deploy | Docker Compose (simple, no Metabase/Redis needed) |
@@ -168,10 +168,10 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 - `get_nowruz_forecast()` — پیش‌بینی درآمد نوروز
 
 ### افزودن تحلیل هوش مصنوعی / نوروز
-1. تابع در `services/api/app/services/analytics_engine.py`
-2. endpoint در `services/api/app/api/v1/endpoints/__init__.py`
-3. تست در `services/api/tests/`
-4. پنل در `frontend/components/dashboard/` + متادیتای محاسبه
+1. تابع در `services/api/app/db/duckdb_database.py` (ماتد `get_*` جدید)
+2. endpoint در `services/api/app/api/v1/endpoints/insights.py` یا `.nowruz.py` — سپس در `__init__.py` ثبت کنید
+3. تابع API در `frontend/lib/api-client.ts` + کامپوننت در `frontend/app/ai-dashboard/`
+4. متادیتای محاسبه در پاسخ API (`calculation` + `limitation`)
 
 ### بازتولید داده
 ```bash
