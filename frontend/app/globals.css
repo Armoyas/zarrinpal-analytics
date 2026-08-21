@@ -4,165 +4,71 @@
 
 @layer base {
   :root {
-    --background: 42 33% 97%;
-    --foreground: 24 12% 12%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 24 12% 12%;
-
-    --primary: 42 85% 40%;
-    --primary-foreground: 45 100% 98%;
-
-    --secondary: 42 22% 94%;
-    --secondary-foreground: 24 12% 22%;
-
-    --muted: 42 18% 93%;
-    --muted-foreground: 24 7% 44%;
-
-    --accent: 42 30% 92%;
-    --accent-foreground: 24 12% 16%;
-
-    --destructive: 0 72% 48%;
-    --destructive-foreground: 0 0% 100%;
-
-    --success: 152 55% 38%;
-    --success-foreground: 0 0% 100%;
-
-    --warning: 38 92% 44%;
-    --warning-foreground: 0 0% 100%;
-
-    --border: 40 16% 88%;
-    --input: 40 16% 86%;
-    --ring: 42 85% 44%;
-
-    --chart-1: 42 85% 48%;
-    --chart-2: 174 58% 38%;
-    --chart-3: 250 45% 52%;
-    --chart-4: 348 72% 54%;
-    --chart-5: 152 52% 40%;
-
-    --radius: 0.75rem;
+    --background: 220 20% 8%;
+    --foreground: 0 0% 95%;
+    --card: 220 20% 12%;
+    --card-foreground: 0 0% 95%;
+    --popover: 220 20% 12%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 38 100% 45%;
+    --primary-foreground: 220 30% 8%;
+    --secondary: 220 30% 15%;
+    --secondary-foreground: 0 0% 90%;
+    --muted: 220 30% 15%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 38 100% 45%;
+    --accent-foreground: 220 30% 8%;
+    --destructive: 0 84% 60%;
+    --border: 220 30% 20%;
+    --input: 220 30% 20%;
+    --ring: 38 100% 45%;
   }
 
   .dark {
-    --background: 24 14% 7%;
-    --foreground: 42 22% 92%;
-
-    --card: 24 11% 10%;
-    --card-foreground: 42 22% 92%;
-
-    --primary: 43 92% 56%;
-    --primary-foreground: 24 12% 8%;
-
-    --secondary: 24 9% 16%;
-    --secondary-foreground: 42 22% 92%;
-
-    --muted: 24 9% 15%;
-    --muted-foreground: 24 8% 60%;
-
-    --accent: 24 9% 16%;
-    --accent-foreground: 42 22% 92%;
-
-    --destructive: 0 62% 46%;
-    --destructive-foreground: 0 0% 100%;
-
-    --success: 152 52% 44%;
-    --success-foreground: 24 12% 8%;
-
-    --warning: 42 90% 56%;
-    --warning-foreground: 24 12% 8%;
-
-    --border: 24 9% 20%;
-    --input: 24 9% 22%;
-    --ring: 43 92% 56%;
-
-    --chart-1: 43 92% 58%;
-    --chart-2: 174 55% 48%;
-    --chart-3: 250 60% 62%;
-    --chart-4: 348 72% 62%;
-    --chart-5: 152 55% 48%;
+    --background: 220 20% 8%;
+    --foreground: 0 0% 95%;
+    --card: 220 20% 12%;
+    --card-foreground: 0 0% 93%;
+    --popover: 220 20% 12%;
+    --popover-foreground: 0 0% 93%;
+    --primary: 38 100% 45%;
+    --primary-foreground: 220 30% 8%;
+    --secondary: 220 30% 15%;
+    --secondary-foreground: 0 0% 90%;
+    --muted: 220 30% 15%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 38 100% 45%;
+    --accent-foreground: 220 30% 8%;
+    --destructive: 0 84% 60%;
+    --border: 220 30% 20%;
+    --input: 220 30% 20%;
+    --ring: 38 100% 45%;
   }
 }
 
 @layer base {
-  /* Brand sidebar stays dark ink in both themes — the ZarrinPal "vault" */
-  :root {
-    --sidebar: 24 10% 11%;
-    --sidebar-foreground: 40 30% 96%;
-    --sidebar-primary: 43 92% 56%;
-    --sidebar-primary-foreground: 24 10% 11%;
-    --sidebar-accent: 24 8% 18%;
-    --sidebar-accent-foreground: 40 30% 96%;
-    --sidebar-border: 24 8% 20%;
-  }
-
   * {
     @apply border-border;
   }
-
-  html {
-    scroll-behavior: smooth;
-  }
-
   body {
-    @apply bg-background text-foreground antialiased;
-    font-feature-settings: 'ss01', 'tnum';
-    text-rendering: optimizeLegibility;
-  }
-
-  ::selection {
-    background: hsl(var(--primary) / 0.22);
-    color: hsl(var(--foreground));
-  }
-
-  /* Numbers always LTR so Rials/percentages read correctly inside RTL text */
-  .num {
-    direction: ltr;
-    unicode-bidi: embed;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Thin gold-tinted scrollbars */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: hsl(var(--border)) transparent;
-  }
-  *::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  *::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--border));
-    border-radius: 9999px;
-  }
-  *::-webkit-scrollbar-track {
-    background: transparent;
+    @apply bg-background text-foreground;
+    font-family: "Vazirmatn", system-ui, sans-serif;
   }
 }
 
-@layer components {
-  .card-surface {
-    @apply rounded-xl border bg-card text-card-foreground shadow-card;
-  }
-  .card-hover {
-    @apply transition-all duration-200 hover:shadow-card-hover hover:-translate-y-0.5;
-  }
-  .skeleton-shimmer {
-    @apply relative overflow-hidden bg-muted;
-  }
-  .skeleton-shimmer::after {
-    content: '';
-    @apply absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-foreground/5 to-transparent;
-  }
+/* Persian typography */
+.font-persian {
+  font-family: "Vazirmatn", system-ui, sans-serif;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(220 30% 15%);
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(38 100% 45%);
+  border-radius: 4px;
 }

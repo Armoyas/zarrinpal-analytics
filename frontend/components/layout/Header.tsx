@@ -1,45 +1,30 @@
-'use client'
+import { ThemeToggle } from "@/components/layout/ThemeToggle"
+import { Bell, Search } from "lucide-react"
+import { Input } from "@/components/ui/input"
 
-import { Menu, RefreshCw } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { ThemeToggle } from '@/lib/theme'
-import { cn } from '@/lib/utils'
-
-interface HeaderProps {
-  onMenuClick: () => void
-  onRefresh: () => void
-  refreshing: boolean
-}
-
-export function Header({ onMenuClick, onRefresh, refreshing }: HeaderProps) {
+export function Header() {
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur-md lg:px-6">
-      <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenuClick} aria-label="باز کردن منو">
-        <Menu className="h-5 w-5" />
-      </Button>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <h1 className="truncate text-base font-bold tracking-tight sm:text-lg">داشبورد تحلیلی زرین‌پال</h1>
-        <p className="hidden truncate text-xs text-muted-foreground sm:block">
-          نمای کلی عملکرد پذیرنده · داده‌های زنده از تراکنش‌ها
-        </p>
+    <header className="flex h-14 lg:h-16 items-center gap-3 sm:gap-4 border-b bg-muted/40 px-4 sm:px-6">
+      <div className="w-full flex-1">
+        <form onSubmit={(e) => e.preventDefault()}>
+          <div className="relative">
+            <Search className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="جستجو در تراکنش‌ها، فروشگاه‌ها..."
+              className="pr-8 text-right"
+            />
+          </div>
+        </form>
       </div>
-
-      <div className="flex items-center gap-2">
-        <span className="hidden items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground sm:flex">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-          </span>
-          زنده
+      <ThemeToggle />
+      <button className="relative flex items-center justify-center h-8 w-8 rounded-lg border bg-background">
+        <Bell className="h-4 w-4" />
+        <span className="absolute top-0 right-0 flex h-3 w-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
         </span>
-
-        <Button variant="outline" size="icon" onClick={onRefresh} aria-label="به‌روزرسانی داده‌ها">
-          <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
-        </Button>
-
-        <ThemeToggle />
-      </div>
+      </button>
     </header>
   )
 }

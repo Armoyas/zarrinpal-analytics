@@ -1,128 +1,120 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || ''
-const API_PREFIX = API_URL.replace(/\/$/, '')
+// API client for ZarrinPal Analytics Dashboard
+// All endpoints are relative to the backend API base URL
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+// Types
+export interface ApiResponse<T> {
+  data: T
+  success: boolean
+  error?: string
+}
 
 export interface OverviewMetrics {
-  total_attempts: number
-  unique_sessions: number
-  payment_attempts: {
-    total: number
-    completed: number
-    paid: number
-    verified: number
-    failed: number
-    reversed: number
-    no_attempt: number
-  }
+  total_transactions: number
+  total_revenue_rial: number
+  total_merchants: number
   success_rate: number
-  failure_rate: number
-  amount: {
-    total_rials: number
-    avg_per_attempt_rials: number
-    currency: string
-  }
-  adjusted_fee_total: number
-  fee_note: string
-  how_calculated: Record<string, string>
+  avg_transaction_value: number
+  daily_transactions: number
+  monthly_revenue_rial: number
 }
 
-export interface MerchantSummary {
+export interface MerchantData {
   merchant_key: string
-  category_title: string
-  total_attempts: number
-  unique_sessions: number
-  completed_attempts: number
-  paid_attempts: number
-  verified_attempts: number
-  failed_attempts: number
-  reversed_attempts: number
-  no_attempt: number
-  total_amount: number
+  total_transactions: number
+  total_revenue_rial: number
+  success_rate: number
   avg_amount: number
-  total_adjusted_fee: number
-  success_rate_pct: number
+  last_transaction: string
+  risk_score: number
 }
 
-export interface TrendPoint {
-  time_period: string
-  value: number
-}
-
-export interface DailyTrendPoint {
-  day: string
-  count: number
-  amount: number
+export interface TimeSeriesData {
+  date: string
+  total_transactions: number
   success_rate: number
+  total_amount: number
 }
 
-export interface PeerComparison {
-  my_amount: number
-  my_success: number
-  my_attempts: number
-  peer_avg_amount: number
-  peer_avg_rate: number
-  percentile_rank: number
-  category: string
-  category_id: number
-  my_success_rate: number
+export interface PredictionData {
+  date: string
+  predicted_transactions: number
+  upper_bound: number
+  lower_bound: number
+  confidence: number
+}
+
+export interface RiskAlert {
   merchant_key: string
+  risk_score: number
+  alerts: Array<{ type: string; message: string; severity: 'low' | 'medium' | 'high' }>
+  last_transaction: string
+  risk_score_trend: 'increasing' | 'decreasing' | 'stable'
 }
 
-export interface SchemaColumn {
-  name: string
-  type: string
+export interface Anomaly {
+  id: string
+  timestamp: string
+  merchant_key: string
+  metric: string
+  value: number
+  expected: number
+  deviation_pct: number
+  description: string
+  severity: 'low' | 'medium' | 'high'
 }
 
-export interface Schema {
-  columns: SchemaColumn[]
-  total_rows: number
+export interface SpendingPattern {
+  pattern: string
+  description: string
+  confidence: number
+  affected_count: number
 }
 
-export interface StatusDistribution {
-  status: string
-  count: number
-}
-
-export interface HealthResponse {
-  status: string
-  detail: Record<string, unknown>
-}
-
-export class ApiError extends Error {
-  constructor(public status: number, message: string) {
-    super(message)
+export interface NowruzData {
+  period_revenue: number
+  period_transactions: number
+  growth_rate: number
+  top_merchants: MerchantData[]
+  daily_patterns: Array<{
+    day: string
+    transactions: number
+    revenue: number
+    gift_card_share: number
+  }>
+  gift_card_analysis: {
+    total_gift_card_revenue: number
+    gift_card_share: number
+    top_gift_card_merchants: string[]
   }
+  recommendation: string
 }
 
-async function request<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_PREFIX}${path}`, { cache: 'no-store' })
-  if (!res.ok) {
-    throw new ApiError(res.status, `API error: ${res.status}`)
+// API Methods
+async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    ...options,
+  })
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status} ${response.statusText}`)
   }
-  return res.json() as Promise<T>
+  return response.json()
 }
 
 export const api = {
-  health: () => request<HealthResponse>(`/api/v1/health`),
-  schema: () => request<Schema>(`/api/v1/schema`),
-  statusDistribution: () => request<StatusDistribution[]>(`/api/v1/schema/status-distribution`),
-  overview: (merchantKey?: string, startDate?: string, endDate?: string) => {
-    const params = new URLSearchParams()
-    if (merchantKey) params.set('merchant_key', merchantKey)
-    if (startDate) params.set('start_date', startDate)
-    if (endDate) params.set('end_date', endDate)
-    const query = params.toString()
-    return request<OverviewMetrics>(`/api/v1/overview${query ? `?${query}` : ''}`)
-  },
-  merchants: (limit = 20) =>
-    request<MerchantSummary[]>(`/api/v1/merchants?limit=${limit}`),
-  peerComparison: (merchantKey: string) =>
-    request<PeerComparison>(`/api/v1/merchants/${merchantKey}/peer-comparison`),
-  timeSeries: (metric = 'attempts', interval = 'day', merchantKey?: string) =>
-    request<TrendPoint[]>(`/api/v1/time-series?metric=${metric}&interval=${interval}${merchantKey ? `&merchant_key=${merchantKey}` : ''}`),
-  dailyTrends: (merchantKey?: string, days = 90) => {
-    const params = new URLSearchParams()
-    if (merchantKey) params.set('merchant_key', merchantKey)
-    params.set('days', String(days))
-    return request<DailyTrendPoint[]>(`/api/v1/time-series/daily-trends?${params.toString()}`)
-  },
+  getOverview: () => fetchAPI<OverviewMetrics>('/api/v1/overview'),
+  getMerchants: (limit = 10) => fetchAPI<MerchantData[]>(`/api/v1/merchants?limit=${limit}`),
+  getTimeSeries: (days = 30) => fetchAPI<TimeSeriesData[]>(`/api/v1/timeseries?days=${days}`),
+  getAIPredictions: () => fetchAPI<PredictionData[]>('/api/v1/insights/predictive-forecast'),
+  getRiskAlerts: () => fetchAPI<RiskAlert[]>('/api/v1/insights/risk-alerts'),
+  getAnomalies: () => fetchAPI<Anomaly[]>('/api/v1/insights/anomaly-detection'),
+  getSpendingPatterns: () => fetchAPI<SpendingPattern[]>('/api/v1/insights/spending-pattern'),
+  getSmartRecommendations: () => fetchAPI<any[]>('/api/v1/insights/smart-recommendations'),
+  getNowruzAnalytics: () => fetchAPI<NowruzData>('/api/v1/nowruz/analytics'),
+  getNowruzForecast: () => fetchAPI<any>('/api/v1/nowruz/forecast'),
+  getHealth: () => fetchAPI<any>('/health'),
 }
