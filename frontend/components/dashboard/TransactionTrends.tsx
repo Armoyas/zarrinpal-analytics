@@ -31,8 +31,8 @@ export function TransactionTrends({ data }: { data: any }) {
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-              <YAxis yAxisSetName="amount" stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={formatYAxis} />
-              <YAxis yAxisSetName="transactions" orientation="right" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+              <YAxis yAxisId="amount" stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={formatYAxis} />
+              <YAxis yAxisId="transactions" orientation="right" stroke="hsl(var(--muted-foreground))" fontSize={12} />
               <Tooltip
                 contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
                 labelStyle={{ color: "hsl(var(--foreground))" }}

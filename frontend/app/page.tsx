@@ -96,7 +96,7 @@ export default function DashboardPage() {
           <span>هوش مصنوعی و پیش‌بینی</span>
         </h2>
         <Suspense fallback={<Skeleton className="h-64 w-full" />}>
-          <AIPanel merchantKey="demo-merchant" />
+          <AIPanel />
         </Suspense>
       </section>
 
@@ -107,7 +107,7 @@ export default function DashboardPage() {
           <span>تحلیلات نوروزی</span>
         </h2>
         <Suspense fallback={<Skeleton className="h-64 w-full" />}>
-          <NowruzAnalysis merchantKey="demo-merchant" />
+          <NowruzAnalysis />
         </Suspense>
       </section>
 

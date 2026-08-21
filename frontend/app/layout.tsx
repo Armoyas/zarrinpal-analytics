@@ -5,7 +5,7 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider"
 import { QueryProvider } from "@/components/providers/QueryProvider"
 
 const vazirmatn = Vazirmatn({
-  subsets: ["latin"],
+  subsets: ["arabic", "latin"],
   variable: "--font-vazirmatn",
   display: "swap",
 })

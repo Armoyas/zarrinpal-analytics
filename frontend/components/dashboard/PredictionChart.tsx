@@ -57,9 +57,8 @@ export function PredictionChart() {
             border: "1px solid hsl(220 30% 20%)",
             borderRadius: "8px",
           }}
-          formatter={(value: number) => [value.toLocaleString("fa"), "تراکنش‌ها"]}
-            labelFormatter={(label) => `تاریخ: ${label}`}
-          )}
+          formatter={(value: any) => [value.toLocaleString("fa"), "تراکنش‌ها"]}
+          labelFormatter={(label) => `تاریخ: ${label}`}
         />
         <Area
           type="monotone"

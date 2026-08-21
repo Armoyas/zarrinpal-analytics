@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitive.Root>
->(({ className, variant, ...props }, ref) => {
+>(({ className, ...props }, ref) => {
   return (
     <ToastPrimitive.Root
       ref={ref}
