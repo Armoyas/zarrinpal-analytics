@@ -1,33 +1,35 @@
 {
-  "name": "zarrinpal-analytics-frontend",
-  "version": "0.1.0",
+  "name": "zarrinpal-analytics",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3001",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3001",
     "lint": "next lint"
   },
   "dependencies": {
-    "@radix-ui/react-slot": "^1.1.0",
-    "@radix-ui/react-tooltip": "^1.2.16",
+    "@radix-ui/react-icons": "^1.4.0",
+    "@tanstack/react-query": "^5.0.0",
     "class-variance-authority": "^0.7.0",
-    "clsx": "^2.1.1",
-    "lucide-react": "^0.424.0",
-    "next": "14.2.5",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "recharts": "^2.12.7",
-    "tailwind-merge": "^2.5.2"
+    "clsx": "^2.1.0",
+    "next": "^14.0.0",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-query": "^3.69.0",
+    "recharts": "^4.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20.14.15",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.41",
-    "tailwindcss": "^3.4.10",
-    "tailwindcss-animate": "^1.0.7",
-    "typescript": "^5.5.4"
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "@types/react-query": "^3.0.0",
+    "autoprefixer": "^10.4.0",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "^14.0.0",
+    "postcss": "^8.0.0",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5.0.0"
   }
 }

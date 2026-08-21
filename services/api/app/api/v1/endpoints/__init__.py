@@ -9,7 +9,9 @@ All endpoints use the REAL CSV schema:
 
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
+from datetime import datetime
 
+from app.config import get_settings
 from app.db.duckdb_database import DuckDBManager
 from app.schemas import (
     HealthResponse,
@@ -17,9 +19,16 @@ from app.schemas import (
     MerchantOverview,
     TimeSeriesPoint,
 )
-from app.config import get_settings
+
+from app.api.v1.endpoints.metrics import router as metrics_router
+from app.api.v1.endpoints.insights import router as insights_router
+from app.api.v1.endpoints.nowruz import router as nowruz_router
 
 router = APIRouter()
+router.include_router(metrics_router, tags=["metrics"])
+router.include_router(insights_router, tags=["insights"])
+router.include_router(nowruz_router, tags=["nowruz"])
+
 db = DuckDBManager()
 
 

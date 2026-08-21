@@ -149,22 +149,56 @@ Every analytical metric is expressed as an **explicit SQL query** using DuckDB. 
 
 ---
 
-## 📚 Documentation
+---
 
-| Document | Description |
-|----------|-------------|
-| [AGENTS.md](AGENTS.md) | AI coding agent reference (structure, conventions, data model) |
-| [CLAUDE.md](CLAUDE.md) | Quick reference for Claude Code |
-| [docs/PROJECT_HANDOFF.md](docs/PROJECT_HANDOFF.md) | Project handoff, methodology, phase status |
-| [docs/setup.md](docs/setup.md) | Full setup guide |
-| [docs/demo-script.md](docs/demo-script.md) | Demo video script |
-| [docs/data-dictionary.md](docs/data-dictionary.md) | Confirmed CSV column data dictionary |
-| [docs/schema-summary.json](docs/schema-summary.json) | Machine-readable schema |
-| [specs/phase-0-schema-foundation/spec.md](specs/phase-0-schema-foundation/spec.md) | Phase 0: Foundation & schema specification (SDD) |
-| [specs/phase-1-api-foundation/spec.md](specs/phase-1-api-foundation/spec.md) | Phase 1: API specification (SDD) |
-| [specs/phase-2-dashboard-ui/spec.md](specs/phase-2-dashboard-ui/spec.md) | Phase 2: Dashboard UI specification (SDD) |
+## 🤖 AI-Powered Analytics
+
+The dashboard now includes AI-powered analytical endpoints for spending pattern analysis, risk alerts, predictive forecasting, and anomaly detection, plus Nowruz (Persian New Year) holiday analytics.
+
+### AI Analytics Endpoints
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/api/v1/insights/spending-pattern` | AI-driven transaction spending pattern analysis |
+| `GET` | `/api/v1/insights/risk-alerts` | High-risk merchant alerts ranked by risk score |
+| `GET` | `/api/v1/insights/predictive-forecast` | 7-day predictive forecast of transaction volume |
+| `GET` | `/api/v1/insights/anomaly-detection` | Anomaly detection in merchant behavior |
+| `GET` | `/api/v1/merchants` | Merchant performance metrics |
+
+### Nowruz (Persian New Year) Analytics
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/api/v1/nowruz/analytics` | AI-powered Nowruz period analytics and predictions |
+| `GET` | `/api/v1/nowruz/forecast` | Nowruz revenue forecast |
+| `GET` | `/api/v1/nowruz/comparative` | Comparative analysis vs previous period |
+| `GET` | `/api/v1/nowruz/recommendations` | AI-powered merchant recommendations during Nowruz |
+
+### AI Analytics DuckDB Methods
+
+The `DuckDBManager` includes 6 AI-powered analytical methods:
+
+- `get_spending_patterns()` — Aggregates transaction amounts by status, identifies payment trends and volume distributions
+- `get_risk_alerts(limit=50)` — Computes risk scores per merchant based on failure rates and volume volatility
+- `get_predictive_forecast(days=7)` — Generates time-series forecasts of transaction volume using historical trends
+- `get_anomaly_detection(limit=50)` — Detects statistical anomalies in merchant transaction patterns
+- `get_merchant_performance(merchant_key)` — Returns merchant-level performance metrics (key, volume, revenue, success rate)
+- `get_nowruz_analytics()` — Analyzes transaction patterns during the Nowruz period for gift card and prepaid card transactions
+
+### Frontend AI Dashboard Components
+
+| Component | File | Description |
+|-----------|------|-------------|
+| `AIPanel.tsx` | `frontend/src/app/components/dashboard/` | Container for AI-powered insights section |
+| `AIInsightsCard.tsx` | `frontend/src/app/components/dashboard/` | Spending pattern analysis display |
+| `PredictionChart.tsx` | `frontend/src/app/components/dashboard/` | Forecast visualization with Recharts |
+| `RiskAlertCard.tsx` | `frontend/src/app/components/dashboard/` | High-risk merchant alert display |
+| `AnomalyDetector.tsx` | `frontend/src/app/components/dashboard/` | Anomaly detection results display |
+| `DashboardPage.tsx` | `frontend/src/app/components/dashboard/` | Main dashboard with AI section integration |
 
 ---
+
+## 📚 Documentation
 
 ## 📄 License
 

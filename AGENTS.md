@@ -152,12 +152,22 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 ## Common Development Tasks
 
 ### افزودن endpoint جدید
-1. منطق در `services/api/app/db/duckdb_database.py` یا `services/api/app/services/`
-2. روتر در `services/api/app/api/v1/endpoints/` (اضافه کنید به `__init__.py`)
-3. تست در `services/api/tests/`
-4. تابع در `frontend/lib/api.ts` + کامپوننت در `frontend/components/dashboard/`
+1. منطق در `services/api/app/db/duckdb_database.py` (متد `get_*`) یا `services/api/app/services/`
+2. روتر در `services/api/app/api/v1/endpoints/` — فایل `nowruz.py` (تحلیلات نوروز)، `insights.py` (هوش مصنوعی)، `metrics.py`، یا به `__init__.py` اضافه کنید
+3. در `insights.py` ثبت کنید: `router.include_router(insights_router, tags=["insights"])`
+4. تست در `services/api/tests/`
+5. تابع در `frontend/lib/api-client.ts` + کامپوننت در `frontend/components/dashboard/` یا `frontend/app/ai-dashboard/`
 
-### افزودن نمای تحلیلی جدید
+### روش‌های تحلیل هوش مصنوعی در DuckDBManager
+- `get_spending_patterns()` — تحلیل الگوهای هزینه
+- `get_risk_alerts(limit)` — هشدارهای خطر پذیرندگان
+- `get_predictive_forecast(days)` — پیش‌بینی حجم تراکنش
+- `get_anomaly_detection(limit)` — تشخیص انحراف ناهنجار
+- `get_merchant_performance(merchant_key)` — پروفایل عملکرد هوشمند پذیرنده
+- `get_nowruz_analytics()` — تحلیلات ضیافت نوروز با AI
+- `get_nowruz_forecast()` — پیش‌بینی درآمد نوروز
+
+### افزودن تحلیل هوش مصنوعی / نوروز
 1. تابع در `services/api/app/services/analytics_engine.py`
 2. endpoint در `services/api/app/api/v1/endpoints/__init__.py`
 3. تست در `services/api/tests/`
