@@ -1,50 +1,35 @@
+version: '3.8'
+
 services:
-  # ─────────────────────────────────────────────
-  # FastAPI Backend — DuckDB analytics engine
-  # ─────────────────────────────────────────────
   api:
     build:
       context: ./services/api
       dockerfile: Dockerfile
-    container_name: zarrinpal-api
     ports:
       - "8000:8000"
     environment:
-      - DATA_FILE=/app/data/sample_data.csv
-      - DUCKDB_PATH=/app/data/analytics.duckdb
-      - DEBUG=false
+      - PYTHONPATH=.:./app/db
     volumes:
-      # Mount sample data for testing
-      - type: bind
-        source: ./data/sample_data.csv
-        target: /app/data/sample_data.csv
-        read_only: true
-      # DuckDB database (stateful)
-      - duckdb-data:/app/data
-    command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-    depends_on:
-      frontend:
-        condition: service_started
+      - ./services/api:/app
+    working_dir: /app
 
-  # ─────────────────────────────────────────────
-  # Next.js Frontend — Persian RTL dashboard
-  # ─────────────────────────────────────────────
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: zarrinpal-frontend
     ports:
       - "3000:3000"
+    depends_on:
+      - api
     environment:
-      - NEXT_PUBLIC_API_URL=http://api:8000/api/v1
-      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://api:8000
 
-volumes:
-  duckdb-data:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - frontend
+      - api

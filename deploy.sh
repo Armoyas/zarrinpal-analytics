@@ -1,10 +1,18 @@
 #!/bin/bash
 # ZarrinPal Analytics Dashboard - Deployment Script
 # Server: 62.60.198.209 (Test)
+# Usage: curl -s https://raw.githubusercontent.com/Armoyas/zarrinpal-analytics/main/deploy.sh | bash
+# Or with Docker: curl -s https://raw.githubusercontent.com/Armoyas/zarrinpal-analytics/main/deploy.sh | bash -s -- --docker
 
 set -e
 
+DOCKER_MODE=false
+if [ "$1" = "--docker" ]; then
+    DOCKER_MODE=true
+fi
+
 echo "=== ZarrinPal Analytics Deployment ==="
+echo "Mode: $(${DOCKER_MODE} && echo 'Docker' || echo 'Direct')"
 
 # Update system
 echo "Updating system packages..."
