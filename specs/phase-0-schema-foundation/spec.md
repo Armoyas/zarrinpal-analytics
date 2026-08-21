@@ -2,7 +2,7 @@
 
 > **Status:** Approved
 > **Created:** 2026-08-20
-> **Phase:** Phase 0 Completion → Phase 1 Foundation
+> **Phase:** Phase 0 — Schema Foundation
 > **Approver:** Human review of docs/data-dictionary.md
 
 ---

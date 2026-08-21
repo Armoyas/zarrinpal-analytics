@@ -152,7 +152,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 ## Common Development Tasks
 
 ### افزودن endpoint جدید
-1. منطق در `services/api/app/database.py` یا `services/api/app/services/`
+1. منطق در `services/api/app/db/duckdb_database.py` یا `services/api/app/services/`
 2. روتر در `services/api/app/api/v1/endpoints/` (اضافه کنید به `__init__.py`)
 3. تست در `services/api/tests/`
 4. تابع در `frontend/lib/api.ts` + کامپوننت در `frontend/components/dashboard/`
