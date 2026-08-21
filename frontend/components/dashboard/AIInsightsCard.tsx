@@ -1,9 +1,11 @@
+"use client"
+
 import { useQuery } from "@tanstack/react-query"
-import { api, SpendingPattern } from "@/lib/api"
+import { api } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Brain, Target, Zap, Users, BarChart3, AlertCircle, Gift } from "lucide-react"
+import { Brain, BarChart3, AlertCircle, Gift } from "lucide-react"
 import { toPersianNumber } from "@/lib/utils"
 
 const iconMap: Record<string, React.ElementType> = {
@@ -14,10 +16,12 @@ const iconMap: Record<string, React.ElementType> = {
 }
 
 export function AIInsightsCard() {
-  const { data: patterns, isLoading } = useQuery({
+  const { data: result, isLoading } = useQuery({
     queryKey: ["spending-patterns"],
     queryFn: api.getSpendingPatterns,
   })
+
+  const patterns = result?.patterns
 
   if (isLoading) {
     return (

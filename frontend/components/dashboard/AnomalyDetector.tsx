@@ -1,5 +1,7 @@
+"use client"
+
 import { useQuery } from "@tanstack/react-query"
-import { api, Anomaly } from "@/lib/api"
+import { api } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"

@@ -1,8 +1,9 @@
+"use client"
+
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -48,9 +49,7 @@ export function PredictionChart() {
           axisLine={false}
           tickLine={false}
         />
-        <YAxis
-          hide
-        />
+        <YAxis hide />
         <Tooltip
           contentStyle={{
             backgroundColor: "hsl(220 20% 12%)",
