@@ -84,7 +84,7 @@ pip install -r services/api/requirements.txt -q
 # Load sample data into DuckDB
 echo "Initializing database..."
 cd services/api
-PYTHONPATH=.:./app/db python scripts/seed_demo.py
+PYTHONPATH=.:./app/db python ../../scripts/seed_demo.py
 cd /var/www/zarrinpal
 
 # Install frontend dependencies
