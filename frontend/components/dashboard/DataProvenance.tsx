@@ -1,32 +1,46 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Database } from 'lucide-react'
+import { Database, ScanSearch } from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+
+const formulas = [
+  { label: 'تعداد تلاش‌ها', code: 'COUNT(*)' },
+  { label: 'نرخ موفقیت', code: '((paid + verified) / total) × 100' },
+  { label: 'مجموع مبلغ', code: 'SUM(amount)' },
+  { label: 'سهم کارمزد', code: 'SUM(adjusted_fee) / SUM(amount) × 100' },
+]
 
 export function DataProvenance() {
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Database className="h-5 w-5 text-teal-600" />
-          ردیابی محاسبات (منبع هر عدد)
+          <Database className="h-5 w-5 text-teal-500" />
+          ردیابی محاسبات — منبع هر عدد
         </CardTitle>
-        <CardDescription>هر عدد در داشبورد از کجا آمده و چگونه محاسبه شده است</CardDescription>
+        <CardDescription className="flex items-center gap-1.5">
+          <ScanSearch className="h-3.5 w-3.5" />
+          هیچ عددی جعبه سیاه نیست؛ فرمول هر متریک از طریق فیلد{' '}
+          <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs" dir="ltr">
+            how_calculated
+          </code>{' '}
+          در دسترس است.
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground">
-          متادیتای محاسبه برای هر متریک از طریق endpoint <code>/api/v1/overview</code>
-          قابل دسترسی است (فیلد how_calculated). هر عدد در کارت‌های KPI با آیکن
-          علامت سؤال قابل ردیابی است.
-        </p>
-        <p className="mt-2 text-sm text-muted-foreground">
-          برای مثال:
-        </p>
-        <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-          <li><code>total_attempts</code>: COUNT(*) — تعداد ردیف‌های پرداخت (تلاش)</li>
-          <li><code>success_rate</code>: ((paid + verified) / total) × 100</li>
-          <li><code>total_amount</code>: SUM(amount) — مجموع مبلغ به ریال</li>
-        </ul>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {formulas.map((f) => (
+            <div key={f.label} className="rounded-xl border bg-muted/30 p-3">
+              <p className="text-xs font-medium text-muted-foreground">{f.label}</p>
+              <code
+                className="mt-1.5 block truncate rounded-md bg-card px-2 py-1.5 font-mono text-[11px] text-foreground"
+                dir="ltr"
+              >
+                {f.code}
+              </code>
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   )
