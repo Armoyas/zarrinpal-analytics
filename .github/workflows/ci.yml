@@ -8,19 +8,34 @@ on:
 
 jobs:
   backend-test:
-    name: Backend Tests (FastAPI + DuckDB)
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: services/api
+    env:
+      PYTHONPATH: .:./app/db
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
       - name: Install dependencies
-        run: pip install -r requirements.txt pytest
+        run: |
+          pip install fastapi uvicorn duckdb pandas pytest pytest-cov
+
       - name: Generate sample data
-        run: python ../../scripts/seed_demo.py --rows 10000 --out data/sample_data.csv
+        run: |
+          python ../../scripts/seed_demo.py --rows 50000 --out data/sample_data.csv
+
       - name: Run tests
-        run: pytest -v
+        run: |
+          PYTHONPATH=. pytest tests/ -v
+
+      - name: Run type-check
+        run: |
+          python -c "import duckdb_database; print('Import OK')"
