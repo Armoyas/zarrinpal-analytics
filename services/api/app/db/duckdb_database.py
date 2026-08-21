@@ -50,6 +50,11 @@ class DuckDBManager:
             self._ensure_table()
         return self._conn
 
+    @property
+    def conn(self) -> duckdb.DuckDBPyConnection:
+        """Active connection (alias) used by AI analytics methods."""
+        return self.get_connection()
+
     def _ensure_table(self):
         conn = self.get_connection()
         tables = conn.execute(
@@ -617,7 +622,7 @@ class DuckDBManager:
                     "risk_score_trend": "increasing",
                 })
             return alerts
-        except Exception as e:
+        except Exception:
             return []
 
     def get_predictive_forecast(self, days: int = 30) -> list:
