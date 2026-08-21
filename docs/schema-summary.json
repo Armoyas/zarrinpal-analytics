@@ -1,39 +1,22 @@
 {
-  "file": "data/sample_data.csv",
-  "row_count": 10000,
+  "file": "smaple.csv",
+  "row_count": 19999,
   "column_count": 22,
   "columns": [
     {
       "name": "session_key",
-      "dtype": "string",
+      "dtype": "integer",
       "null_count": 0,
       "null_percentage": 0.0,
-      "unique_count": 10000,
-      "sample_values": [
-        "53d90291-1561-490d-b42f-eaceca483de1",
-        "67f9323f-8648-4024-8385-3f9f7bad7ce5",
-        "877cb84e-86e7-47df-b252-6f92106bee03",
-        "00eece11-b7d2-47fb-8282-75220b2bab8c",
-        "d002707c-7614-49e9-9358-51062057a480"
-      ],
-      "value_counts": {
-        "53d90291-1561-490d-b42f-eaceca483de1": 1,
-        "67f9323f-8648-4024-8385-3f9f7bad7ce5": 1,
-        "877cb84e-86e7-47df-b252-6f92106bee03": 1,
-        "00eece11-b7d2-47fb-8282-75220b2bab8c": 1,
-        "d002707c-7614-49e9-9358-51062057a480": 1,
-        "ec032e84-5433-42f2-821a-11a3f101fcd2": 1,
-        "d36075fc-9732-4e70-b7cc-422562abc8e5": 1,
-        "59492315-02b1-441b-9e2e-ca041d87e8ea": 1,
-        "854b9635-2397-4a5c-af21-83d3746eba1b": 1,
-        "b1976bee-eb81-4320-af6d-de47234dae64": 1
-      },
+      "unique_count": 19506,
+      "min": 200,
+      "max": 2062743,
       "example_values": [
-        "53d90291-1561-490d-b42f-eaceca483de1",
-        "67f9323f-8648-4024-8385-3f9f7bad7ce5",
-        "877cb84e-86e7-47df-b252-6f92106bee03",
-        "00eece11-b7d2-47fb-8282-75220b2bab8c",
-        "d002707c-7614-49e9-9358-51062057a480"
+        "1371823",
+        "1303374",
+        "23960",
+        "1648036",
+        "1992156"
       ]
     },
     {
@@ -41,15 +24,15 @@
       "dtype": "integer",
       "null_count": 0,
       "null_percentage": 0.0,
-      "unique_count": 10,
+      "unique_count": 23,
       "min": 0,
-      "max": 9,
+      "max": 22,
       "example_values": [
-        "0",
-        "2",
-        "2",
-        "5",
-        "4"
+        "1",
+        "1",
+        "1",
+        "1",
+        "0"
       ]
     },
     {
@@ -57,23 +40,28 @@
       "dtype": "string",
       "null_count": 0,
       "null_percentage": 0.0,
-      "unique_count": 3,
+      "unique_count": 29,
       "sample_values": [
-        "T5001",
-        "T5002",
-        "T5000"
+        "T318"
       ],
       "value_counts": {
-        "T5002": 3391,
-        "T5000": 3319,
-        "T5001": 3290
+        "T99": 5915,
+        "T196": 5020,
+        "T309": 3908,
+        "T59": 1804,
+        "T261": 1240,
+        "T97": 1156,
+        "T1": 208,
+        "T339": 202,
+        "T78": 91,
+        "T312": 78
       },
       "example_values": [
-        "T5001",
-        "T5002",
-        "T5001",
-        "T5001",
-        "T5000"
+        "T318",
+        "T318",
+        "T318",
+        "T318",
+        "T318"
       ]
     },
     {
@@ -81,32 +69,28 @@
       "dtype": "string",
       "null_count": 0,
       "null_percentage": 0.0,
-      "unique_count": 50,
+      "unique_count": 29,
       "sample_values": [
-        "M1005",
-        "M1006",
-        "M1016",
-        "M1003",
-        "M1033"
+        "M145"
       ],
       "value_counts": {
-        "M1002": 232,
-        "M1005": 225,
-        "M1044": 223,
-        "M1017": 222,
-        "M1032": 222,
-        "M1028": 221,
-        "M1003": 220,
-        "M1020": 215,
-        "M1048": 213,
-        "M1034": 212
+        "M31": 5915,
+        "M43": 5020,
+        "M208": 3908,
+        "M250": 1804,
+        "M210": 1240,
+        "M37": 1156,
+        "M333": 208,
+        "M262": 202,
+        "M215": 91,
+        "M61": 78
       },
       "example_values": [
-        "M1005",
-        "M1006",
-        "M1016",
-        "M1003",
-        "M1033"
+        "M145",
+        "M145",
+        "M145",
+        "M145",
+        "M145"
       ]
     },
     {
@@ -114,15 +98,15 @@
       "dtype": "integer",
       "null_count": 0,
       "null_percentage": 0.0,
-      "unique_count": 8,
-      "min": 1,
-      "max": 8,
+      "unique_count": 5,
+      "min": 48160000,
+      "max": 82410000,
       "example_values": [
-        "3",
-        "5",
-        "1",
-        "3",
-        "3"
+        "48160002",
+        "48160002",
+        "48160002",
+        "48160002",
+        "48160002"
       ]
     },
     {
@@ -130,28 +114,23 @@
       "dtype": "string",
       "null_count": 0,
       "null_percentage": 0.0,
-      "unique_count": 8,
+      "unique_count": 5,
       "sample_values": [
-        "\u0633\u0641\u0631 \u0648 \u06af\u0631\u062f\u0634\u06af\u0631\u06cc",
-        "\u0633\u0644\u0648\u0644\u062a\u0627\u0647\u0627\u06cc \u0641\u0631\u0648\u0634\u06af\u0627\u0647\u06cc",
-        "\u0622\u0645\u0648\u0632\u0634 \u0648 \u0622\u0645\u0648\u0632\u0634\u06af\u0627\u0647"
+        "\u0627\u0631\u0627\u0626\u0647 \u062f\u0647\u0646\u062f\u0647 \u062e\u062f\u0645\u0627\u062a \u0627\u06cc\u0646\u062a\u0631\u0646\u062a"
       ],
       "value_counts": {
-        "\u0633\u0641\u0631 \u0648 \u06af\u0631\u062f\u0634\u06af\u0631\u06cc": 1281,
-        "\u062e\u0631\u062f\u0647\u200c\u0641\u0631\u0648\u0634\u06cc \u0622\u0646\u0644\u0627\u06cc\u0646": 1264,
-        "\u062e\u062f\u0645\u0627\u062a \u062f\u06cc\u062c\u06cc\u062a\u0627\u0644": 1256,
-        "\u0633\u0644\u0648\u0644\u062a\u0627\u0647\u0627\u06cc \u0641\u0631\u0648\u0634\u06af\u0627\u0647\u06cc": 1252,
-        "\u0639\u06cc\u0646\u06cc \u0648 \u0633\u0631\u0648\u06cc\u0633\u06cc": 1246,
-        "\u063a\u0630\u0627 \u0648 \u0631\u0633\u062a\u0648\u0631\u0627\u0646": 1237,
-        "\u0622\u0645\u0648\u0632\u0634 \u0648 \u0622\u0645\u0648\u0632\u0634\u06af\u0627\u0647": 1236,
-        "\u0635\u0646\u0639\u062a\u06cc \u0648 \u0633\u0627\u062e\u062a\u06af\u06cc": 1228
+        "\u06a9\u06cc\u0641 \u0648 \u06a9\u0641\u0634 \u0641\u0631\u0648\u0634\u06cc": 6577,
+        "\u0645\u0631\u0627\u06a9\u0632 \u0622\u0645\u0648\u0632\u0634\u06cc \u0645\u062c\u0627\u0632\u06cc": 6057,
+        "\u062e\u062f\u0645\u0627\u062a \u0634\u0628\u06a9\u0647\u200c\u0647\u0627\u06cc \u06a9\u0627\u0645\u067e\u06cc\u0648\u062a\u0631\u06cc \u0648 \u0627\u06cc\u0646\u062a\u0631\u0646\u062a": 5807,
+        "\u0627\u0631\u0627\u0626\u0647 \u062f\u0647\u0646\u062f\u0647 \u062e\u062f\u0645\u0627\u062a \u0627\u06cc\u0646\u062a\u0631\u0646\u062a": 1296,
+        "\u0641\u0631\u0648\u0634\u06af\u0627\u0647 \u0644\u0648\u0627\u0632\u0645 \u0622\u0631\u0627\u06cc\u0634\u06cc \u0648 \u0628\u0647\u062f\u0627\u0634\u062a\u06cc": 262
       },
       "example_values": [
-        "\u0633\u0641\u0631 \u0648 \u06af\u0631\u062f\u0634\u06af\u0631\u06cc",
-        "\u0633\u0644\u0648\u0644\u062a\u0627\u0647\u0627\u06cc \u0641\u0631\u0648\u0634\u06af\u0627\u0647\u06cc",
-        "\u0622\u0645\u0648\u0632\u0634 \u0648 \u0622\u0645\u0648\u0632\u0634\u06af\u0627\u0647",
-        "\u0633\u0641\u0631 \u0648 \u06af\u0631\u062f\u0634\u06af\u0631\u06cc",
-        "\u0633\u0641\u0631 \u0648 \u06af\u0631\u062f\u0634\u06af\u0631\u06cc"
+        "\u0627\u0631\u0627\u0626\u0647 \u062f\u0647\u0646\u062f\u0647 \u062e\u062f\u0645\u0627\u062a \u0627\u06cc\u0646\u062a\u0631\u0646\u062a",
+        "\u0627\u0631\u0627\u0626\u0647 \u062f\u0647\u0646\u062f\u0647 \u062e\u062f\u0645\u0627\u062a \u0627\u06cc\u0646\u062a\u0631\u0646\u062a",
+        "\u0627\u0631\u0627\u0626\u0647 \u062f\u0647\u0646\u062f\u0647 \u062e\u062f\u0645\u0627\u062a \u0627\u06cc\u0646\u062a\u0631\u0646\u062a",
+        "\u0627\u0631\u0627\u0626\u0647 \u062f\u0647\u0646\u062f\u0647 \u062e\u062f\u0645\u0627\u062a \u0627\u06cc\u0646\u062a\u0631\u0646\u062a",
+        "\u0627\u0631\u0627\u0626\u0647 \u062f\u0647\u0646\u062f\u0647 \u062e\u062f\u0645\u0627\u062a \u0627\u06cc\u0646\u062a\u0631\u0646\u062a"
       ]
     },
     {
@@ -159,15 +138,15 @@
       "dtype": "integer",
       "null_count": 0,
       "null_percentage": 0.0,
-      "unique_count": 10000,
-      "min": 55587,
-      "max": 49979034,
+      "unique_count": 747,
+      "min": 1000,
+      "max": 901600000,
       "example_values": [
-        "5980763",
-        "43287648",
-        "2789345",
-        "49393219",
-        "46673292"
+        "6390000",
+        "6390000",
+        "3690000",
+        "3799000",
+        "12490000"
       ]
     },
     {
@@ -175,15 +154,15 @@
       "dtype": "integer",
       "null_count": 0,
       "null_percentage": 0.0,
-      "unique_count": 9984,
-      "min": 2044,
-      "max": 2098219,
+      "unique_count": 706,
+      "min": 1920,
+      "max": 218400,
       "example_values": [
-        "212620",
-        "1637996",
-        "104406",
-        "1821284",
-        "1761643"
+        "56720",
+        "56720",
+        "35120",
+        "35992",
+        "105520"
       ]
     },
     {
@@ -191,27 +170,22 @@
       "dtype": "string",
       "null_count": 0,
       "null_percentage": 0.0,
-      "unique_count": 6,
+      "unique_count": 3,
       "sample_values": [
-        "Paid",
-        "Verified",
         "Failed",
-        "InBank"
+        "Verified"
       ],
       "value_counts": {
-        "Verified": 4552,
-        "InBank": 2022,
-        "Failed": 1424,
-        "Paid": 1011,
-        "Reversed": 515,
-        "NoAttempt": 476
+        "Failed": 10231,
+        "Verified": 9502,
+        "Paid": 266
       },
       "example_values": [
-        "Paid",
-        "Verified",
         "Failed",
-        "Paid",
-        "InBank"
+        "Failed",
+        "Failed",
+        "Verified",
+        "Failed"
       ]
     },
     {
@@ -219,157 +193,149 @@
       "dtype": "string",
       "null_count": 0,
       "null_percentage": 0.0,
-      "unique_count": 6,
+      "unique_count": 5,
       "sample_values": [
-        "Paid",
-        "Verified"
+        "Failed",
+        "InBank",
+        "Verified",
+        "NoAttempt"
       ],
       "value_counts": {
-        "Verified": 4442,
-        "InBank": 2025,
-        "Failed": 1566,
-        "Paid": 941,
-        "NoAttempt": 532,
-        "Reversed": 494
+        "Verified": 9379,
+        "InBank": 8677,
+        "NoAttempt": 1488,
+        "Paid": 262,
+        "Failed": 193
       },
       "example_values": [
-        "Paid",
+        "Failed",
+        "InBank",
+        "InBank",
         "Verified",
-        "Verified",
-        "Verified",
-        "Paid"
+        "NoAttempt"
       ]
     },
     {
       "name": "switch_response_code",
       "dtype": "string",
-      "null_count": 9388,
-      "null_percentage": 93.88,
-      "unique_count": 612,
+      "null_count": 19302,
+      "null_percentage": 96.51,
+      "unique_count": 36,
       "sample_values": [
-        "PSP-711:2678",
-        "PSP-721:2219",
-        "PSP-293:1407",
-        "PSP-382:8328",
-        "PSP-200:1381"
+        "PSP-05:55",
+        "PSP-03:56",
+        "PSP-03:59"
       ],
       "value_counts": {
-        "PSP-711:2678": 1,
-        "PSP-721:2219": 1,
-        "PSP-293:1407": 1,
-        "PSP-382:8328": 1,
-        "PSP-200:1381": 1,
-        "PSP-534:4637": 1,
-        "PSP-463:8682": 1,
-        "PSP-152:6821": 1,
-        "PSP-887:9582": 1,
-        "PSP-184:2928": 1
+        "PSP-05:12": 99,
+        "PSP-03:56": 95,
+        "PSP-03:51": 66,
+        "PSP-03:-3": 65,
+        "PSP-05:21": 63,
+        "PSP-05:15": 52,
+        "PSP-03:59": 49,
+        "PSP-05:-100": 32,
+        "PSP-03:54": 29,
+        "PSP-03:55": 26
       },
       "example_values": [
-        "PSP-711:2678",
-        "PSP-721:2219",
-        "PSP-293:1407",
-        "PSP-382:8328",
-        "PSP-200:1381"
+        "PSP-05:55",
+        "PSP-03:56",
+        "PSP-03:56",
+        "PSP-03:56",
+        "PSP-03:59"
       ]
     },
     {
       "name": "psp_code",
       "dtype": "string",
-      "null_count": 9388,
-      "null_percentage": 93.88,
-      "unique_count": 439,
+      "null_count": 1488,
+      "null_percentage": 7.44,
+      "unique_count": 7,
       "sample_values": [
-        "PSP584",
-        "PSP798",
-        "PSP288",
-        "PSP216",
-        "PSP453"
+        "PSP-05",
+        "PSP-02"
       ],
       "value_counts": {
-        "PSP669": 5,
-        "PSP958": 4,
-        "PSP446": 4,
-        "PSP453": 3,
-        "PSP140": 3,
-        "PSP317": 3,
-        "PSP882": 3,
-        "PSP364": 3,
-        "PSP875": 3,
-        "PSP961": 3
+        "PSP-03": 11973,
+        "PSP-05": 5853,
+        "PSP-07": 344,
+        "PSP-04": 184,
+        "PSP-01": 85,
+        "PSP-06": 44,
+        "PSP-02": 28
       },
       "example_values": [
-        "PSP584",
-        "PSP798",
-        "PSP288",
-        "PSP216",
-        "PSP453"
+        "PSP-05",
+        "PSP-05",
+        "PSP-05",
+        "PSP-05",
+        "PSP-02"
       ]
     },
     {
       "name": "issuer_bank_code",
       "dtype": "string",
-      "null_count": 9388,
-      "null_percentage": 93.88,
-      "unique_count": 90,
+      "null_count": 10358,
+      "null_percentage": 51.79,
+      "unique_count": 27,
       "sample_values": [
-        "BANK56",
-        "BANK32",
-        "BANK95",
-        "BANK55",
-        "BANK12"
+        "BANK-31",
+        "BANK-17",
+        "BANK-27",
+        "BANK-08"
       ],
       "value_counts": {
-        "BANK43": 19,
-        "BANK13": 16,
-        "BANK55": 14,
-        "BANK66": 12,
-        "BANK68": 11,
-        "BANK72": 11,
-        "BANK22": 10,
-        "BANK38": 10,
-        "BANK93": 10,
-        "BANK44": 10
+        "BANK-14": 2156,
+        "BANK-18": 1868,
+        "BANK-31": 1070,
+        "BANK-17": 564,
+        "BANK-12": 551,
+        "BANK-27": 504,
+        "BANK-29": 443,
+        "BANK-08": 372,
+        "BANK-25": 343,
+        "BANK-16": 328
       },
       "example_values": [
-        "BANK56",
-        "BANK32",
-        "BANK95",
-        "BANK55",
-        "BANK12"
+        "BANK-31",
+        "BANK-17",
+        "BANK-27",
+        "BANK-27",
+        "BANK-08"
       ]
     },
     {
       "name": "payer_card_key",
       "dtype": "string",
-      "null_count": 9388,
-      "null_percentage": 93.88,
-      "unique_count": 612,
+      "null_count": 10358,
+      "null_percentage": 51.79,
+      "unique_count": 7865,
       "sample_values": [
-        "65a8503b-54e",
-        "73b6c187-8d9",
-        "a173b8c6-f2f",
-        "f68138d1-a5e",
-        "67330a34-b42"
+        "CARD-181237",
+        "CARD-145374",
+        "CARD-188168",
+        "CARD-148656",
+        "CARD-192289"
       ],
       "value_counts": {
-        "65a8503b-54e": 1,
-        "73b6c187-8d9": 1,
-        "a173b8c6-f2f": 1,
-        "f68138d1-a5e": 1,
-        "67330a34-b42": 1,
-        "4b8b07e9-504": 1,
-        "cc99248f-5b2": 1,
-        "8114bda5-3d2": 1,
-        "88375076-f76": 1,
-        "7bf136bb-964": 1
+        "CARD-195918": 22,
+        "CARD-112072": 21,
+        "CARD-163501": 18,
+        "CARD-182818": 18,
+        "CARD-231451": 15,
+        "CARD-322291": 15,
+        "CARD-67424": 14,
+        "CARD-9194": 14,
+        "CARD-280133": 12,
+        "CARD-126747": 12
       },
       "example_values": [
-        "65a8503b-54e",
-        "73b6c187-8d9",
-        "a173b8c6-f2f",
-        "f68138d1-a5e",
-        "67330a34-b42"
+        "CARD-181237",
+        "CARD-145374",
+        "CARD-188168",
+        "CARD-148656",
+        "CARD-192289"
       ]
     },
     {
@@ -379,50 +345,50 @@
       "null_percentage": 0.0,
       "unique_count": 2,
       "sample_values": [
-        "Manual"
+        "Automated"
       ],
       "value_counts": {
-        "Manual": 5023,
-        "Automated": 4977
+        "Automated": 18730,
+        "Manual": 1269
       },
       "example_values": [
-        "Manual",
-        "Manual",
-        "Manual",
-        "Manual",
-        "Manual"
+        "Automated",
+        "Automated",
+        "Automated",
+        "Automated",
+        "Automated"
       ]
     },
     {
       "name": "init_time_ms",
       "dtype": "float",
-      "null_count": 9388,
-      "null_percentage": 93.88,
-      "unique_count": 534,
-      "min": 52.0,
-      "max": 1992.0,
+      "null_count": 1784,
+      "null_percentage": 8.92,
+      "unique_count": 406,
+      "min": 53.0,
+      "max": 32156.0,
       "example_values": [
-        "1377.0",
-        "1448.0",
-        "1644.0",
-        "602.0",
-        "342.0"
+        "86.0",
+        "175.0",
+        "201.0",
+        "82.0",
+        "100.0"
       ]
     },
     {
       "name": "verify_time_ms",
       "dtype": "float",
-      "null_count": 9441,
-      "null_percentage": 94.41,
-      "unique_count": 482,
-      "min": 53.0,
-      "max": 2000.0,
+      "null_count": 10360,
+      "null_percentage": 51.8,
+      "unique_count": 323,
+      "min": 51.0,
+      "max": 11006.0,
       "example_values": [
-        "491.0",
-        "467.0",
-        "347.0",
-        "920.0",
-        "295.0"
+        "79.0",
+        "159.0",
+        "139.0",
+        "83.0",
+        "102.0"
       ]
     },
     {
@@ -430,79 +396,96 @@
       "dtype": "datetime",
       "null_count": 0,
       "null_percentage": 0.0,
-      "unique_count": 10000,
-      "min": "2024-01-01T00:00:32.902646",
-      "max": "2024-12-30T23:55:54.388229",
+      "unique_count": 18987,
+      "min": "2026-01-01 00:00:17",
+      "max": "2026-01-31 23:53:44",
       "example_values": [
-        "2024-12-11T13:07:31.374569",
-        "2024-05-28T20:23:08.140046",
-        "2024-06-28T07:07:06.962604",
-        "2024-08-28T23:11:41.001731",
-        "2024-09-29T01:56:27.678717"
+        "2026-01-02 11:52:56",
+        "2026-01-02 14:25:23",
+        "2026-01-02 21:54:18",
+        "2026-01-03 10:58:55",
+        "2026-01-24 01:26:14"
       ]
     },
     {
       "name": "try_created_at",
       "dtype": "datetime",
-      "null_count": 9388,
-      "null_percentage": 93.88,
-      "unique_count": 612,
-      "min": "2024-01-01T03:51:29.960045",
-      "max": "2024-12-30T14:34:49.040631",
+      "null_count": 1488,
+      "null_percentage": 7.44,
+      "unique_count": 17997,
+      "min": "2026-01-01 00:00:18",
+      "max": "2026-01-31 23:53:44",
       "example_values": [
-        "2024-12-11T13:07:31.374569",
-        "2024-08-27T11:15:47.345485",
-        "2024-03-03T19:05:14.131061",
-        "2024-02-27T05:14:49.517079",
-        "2024-07-28T01:43:50.799312"
+        "2026-01-02 11:52:56",
+        "2026-01-02 14:25:24",
+        "2026-01-02 21:54:18",
+        "2026-01-03 10:58:55",
+        "2026-01-24 01:30:55"
       ]
     },
     {
       "name": "verified_at",
       "dtype": "datetime",
-      "null_count": 9441,
-      "null_percentage": 94.41,
-      "unique_count": 559,
-      "min": "2024-01-01T03:59:29.960045",
-      "max": "2024-12-30T14:35:49.040631",
+      "null_count": 10497,
+      "null_percentage": 52.49,
+      "unique_count": 9279,
+      "min": "2026-01-01 00:00:59",
+      "max": "2026-01-31 23:55:32",
       "example_values": [
-        "2024-12-11T13:29:31.374569",
-        "2024-08-27T11:19:47.345485",
-        "2024-03-03T19:26:14.131061",
-        "2024-02-27T05:41:49.517079",
-        "2024-07-28T02:07:50.799312"
+        "2026-01-03 11:00:37",
+        "2026-01-24 12:07:02",
+        "2026-01-25 12:10:17",
+        "2026-01-08 20:13:16",
+        "2026-01-01 14:12:29"
       ]
     },
     {
       "name": "settled_at",
       "dtype": "datetime",
-      "null_count": 9898,
-      "null_percentage": 98.98,
-      "unique_count": 102,
-      "min": "2024-01-03T11:44:24.865232",
-      "max": "2024-12-24T17:54:19.177936",
+      "null_count": 10231,
+      "null_percentage": 51.16,
+      "unique_count": 9546,
+      "min": "2026-01-01 00:00:58",
+      "max": "2026-01-31 23:55:31",
       "example_values": [
-        "2024-12-11T13:32:31.374569",
-        "2024-07-28T02:09:50.799312",
-        "2024-10-19T02:15:43.145261",
-        "2024-03-10T03:44:46.038200",
-        "2024-11-08T13:11:58.596374"
+        "2026-01-03 11:00:35",
+        "2026-01-24 12:07:00",
+        "2026-01-25 12:10:16",
+        "2026-01-08 20:13:13",
+        "2026-01-01 14:12:27"
       ]
     },
     {
       "name": "expire_in",
-      "dtype": "integer",
+      "dtype": "string",
       "null_count": 0,
       "null_percentage": 0.0,
-      "unique_count": 1201,
-      "min": 600,
-      "max": 1800,
+      "unique_count": 18976,
+      "sample_values": [
+        "2026-01-02 12:22:56",
+        "2026-01-02 14:55:23",
+        "2026-01-02 22:24:18",
+        "2026-01-03 11:28:55",
+        "2026-01-24 01:56:14"
+      ],
+      "value_counts": {
+        "2026-01-24 02:01:44": 22,
+        "2026-01-23 01:06:17": 22,
+        "2026-01-02 18:41:02": 15,
+        "2026-01-24 02:27:01": 14,
+        "2026-01-23 01:21:35": 13,
+        "2026-01-24 01:55:18": 13,
+        "2026-01-24 01:56:33": 13,
+        "2026-01-23 01:00:55": 12,
+        "2026-01-23 01:08:21": 12,
+        "2026-01-23 01:16:20": 12
+      },
       "example_values": [
-        "717",
-        "799",
-        "1787",
-        "680",
-        "1049"
+        "2026-01-02 12:22:56",
+        "2026-01-02 14:55:23",
+        "2026-01-02 22:24:18",
+        "2026-01-03 11:28:55",
+        "2026-01-24 01:56:14"
       ]
     }
   ]
