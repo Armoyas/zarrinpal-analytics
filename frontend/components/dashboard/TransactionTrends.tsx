@@ -56,7 +56,7 @@ export function TransactionTrends() {
         ) : (
           <div className="h-72 w-full" dir="ltr">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+              <LineChart data={data ?? []} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="label" tick={{ fontSize: 11 }} tickFormatter={(v: string) => v} />
                 <YAxis tick={{ fontSize: 11 }} width={50} />
