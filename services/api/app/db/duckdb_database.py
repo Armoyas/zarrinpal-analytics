@@ -4,6 +4,7 @@ Reads CSV data directly using DuckDB - no PostgreSQL or ORM required.
 All queries use the REAL CSV schema confirmed by schema inspection.
 """
 
+import os
 import duckdb
 from pathlib import Path
 from typing import Any
@@ -23,13 +24,20 @@ class DuckDBManager:
     """Manages DuckDB connection and provides data access methods."""
 
     def __init__(self, db_path: str | None = None, csv_path: str | None = None):
-        # Resolve paths relative to project root.
-        # File location: services/api/app/db/duckdb_database.py
-        # parents[0]=db/ parents[1]=app/ parents[2]=api/
-        # parents[3]=services/api/ parents[4]=project root
-        project_root = Path(__file__).resolve().parents[4]
-        self.db_path = db_path or str(project_root / "data" / "analytics.duckdb")
-        self.csv_path = csv_path or str(project_root / "data" / "sample_data.csv")
+        # Resolve data paths from environment variables (set in Docker),
+        # falling back to walking up from this file to locate the repo's
+        # data/ directory (local development layout).
+        data_dir = os.environ.get("DATA_DIR")
+        if not data_dir:
+            here = Path(__file__).resolve()
+            for parent in here.parents:
+                if (parent / "data").is_dir():
+                    data_dir = str(parent / "data")
+                    break
+        if not data_dir:
+            data_dir = "/app/data"
+        self.db_path = db_path or os.environ.get("DUCKDB_PATH") or str(Path(data_dir) / "analytics.duckdb")
+        self.csv_path = csv_path or os.environ.get("DATA_FILE") or str(Path(data_dir) / "sample_data.csv")
         self._conn = None
 
     def get_connection(self) -> duckdb.DuckDBPyConnection:
