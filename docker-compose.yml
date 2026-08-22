@@ -8,7 +8,6 @@ services:
     environment:
       - PYTHONPATH=.:./app/db
       - DATA_DIR=/app/data
-      - DUCKDB_PATH=/app/data/analytics.duckdb
       - DATA_FILE=/app/data/sample_data.csv
     volumes:
       - ./services/api/app:/app/app

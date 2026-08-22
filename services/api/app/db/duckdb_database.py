@@ -76,17 +76,41 @@ class DuckDBManager:
             print(f"WARNING: {e}")
 
     def _load_csv(self, conn):
-        """Load CSV data into the payments table."""
+        """Load CSV data into the payments table with explicit column types."""
         csv_path = Path(self.csv_path)
         if not csv_path.exists():
             raise FileNotFoundError(f"CSV not found: {self.csv_path}")
-        # Use read_csv with explicit options for robustness with Persian text
-        # and mixed line endings (\r\n). Always DROP TABLE and reload to handle
-        # stale databases from Docker build time vs. runtime volume mounts.
+        # Drop stale table (handles stale db from Docker build vs runtime volume)
         conn.execute("DROP TABLE IF EXISTS payments")
+        # Use read_csv with explicit column types to fix DuckDB's default
+        # VARCHAR inference which causes SQL errors in analytical queries.
         conn.execute(
-            f"CREATE TABLE payments AS SELECT * FROM read_csv("
-            f"'{self.csv_path}', header=true, sep=',', quote='\"')"
+            f"CREATE TABLE payments AS "
+            f"SELECT "
+            f"  CAST(session_key AS VARCHAR) AS session_key,"
+            f"  CAST(try_seq AS INTEGER) AS try_seq,"
+            f"  CAST(terminal_key AS VARCHAR) AS terminal_key,"
+            f"  CAST(merchant_key AS VARCHAR) AS merchant_key,"
+            f"  CAST(category_id AS VARCHAR) AS category_id,"
+            f"  CAST(category_title AS VARCHAR) AS category_title,"
+            f"  CAST(amount AS BIGINT) AS amount,"
+            f"  CAST(adjusted_fee AS DOUBLE) AS adjusted_fee,"
+            f"  CAST(session_status AS VARCHAR) AS session_status,"
+            f"  CAST(try_status AS VARCHAR) AS try_status,"
+            f"  CAST(switch_response_code AS VARCHAR) AS switch_response_code,"
+            f"  CAST(psp_code AS VARCHAR) AS psp_code,"
+            f"  CAST(issuer_bank_code AS VARCHAR) AS issuer_bank_code,"
+            f"  CAST(payer_card_key AS VARCHAR) AS payer_card_key,"
+            f"  CAST(verify_type AS VARCHAR) AS verify_type,"
+            f"  TRY_CAST(init_time_ms AS INTEGER) AS init_time_ms,"
+            f"  TRY_CAST(verify_time_ms AS INTEGER) AS verify_time_ms,"
+            f"  TRY_CAST(CAST(created_at AS VARCHAR) AS TIMESTAMP) AS created_at,"
+            f"  TRY_CAST(CAST(try_created_at AS VARCHAR) AS TIMESTAMP) AS try_created_at,"
+            f"  TRY_CAST(CAST(verified_at AS VARCHAR) AS TIMESTAMP) AS verified_at,"
+            f"  TRY_CAST(CAST(settled_at AS VARCHAR) AS TIMESTAMP) AS settled_at,"
+            f"  TRY_CAST(expire_in AS INTEGER) AS expire_in"
+            f" FROM read_csv('"
+            f"{self.csv_path}', header=true, sep=',', quote='\"', null='')"
         )
         count = conn.execute("SELECT COUNT(*) FROM payments").fetchone()[0]
         print(f"Database loaded: {count} rows from {self.csv_path}")
