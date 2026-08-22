@@ -78,6 +78,17 @@ class TimeSeriesPoint(BaseModel):
     value: float
 
 
+class MetricTraceability(BaseModel):
+    """Traceability metadata for every metric returned by the API."""
+    metric_id: str
+    definition: str
+    formula: str
+    source_columns: list[str]
+    counting_unit: str
+    filters: dict[str, Any]
+    limitations: list[str]
+
+
 class ErrorResponse(BaseModel):
     error: str
     detail: str | None = None

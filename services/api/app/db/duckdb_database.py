@@ -207,44 +207,47 @@ class DuckDBManager:
 
         result = conn.execute(query, params).fetchone()
         labels = [desc[0] for desc in conn.description]
-        metrics = dict(zip(labels, result))
+        metrics = dict(zip(labels, result)) if result else {}
 
-        total = metrics.get("total_attempts", 0)
-        paid = metrics.get("paid_attempts", 0)
-        verified = metrics.get("verified_attempts", 0)
-        completed = metrics.get("completed_attempts", 0)
+        total = metrics.get("total_attempts", 0) or 0
+        paid = metrics.get("paid_attempts", 0) or 0
+        verified = metrics.get("verified_attempts", 0) or 0
+        completed = metrics.get("completed_attempts", 0) or 0
+        avg_amount = metrics.get("avg_amount", 0) or 0
+        total_amount = metrics.get("total_amount", 0) or 0
 
         success_rate = ((paid + verified) / total * 100) if total > 0 else 0
-        failure_rate = (metrics.get("failed_attempts", 0) / total * 100) if total > 0 else 0
+        failure_rate = (metrics.get("failed_attempts", 0) or 0) / total * 100 if total > 0 else 0
 
         return {
-            "total_attempts": metrics.get("total_attempts", 0),
-            "unique_sessions": metrics.get("unique_sessions", 0),
+            "total_attempts": total,
+            "unique_sessions": metrics.get("unique_sessions", 0) or 0,
             "payment_attempts": {
                 "total": total,
                 "completed": completed,
                 "paid": paid,
                 "verified": verified,
-                "failed": metrics.get("failed_attempts", 0),
-                "reversed": metrics.get("reversed_attempts", 0),
-                "no_attempt": metrics.get("no_attempt", 0),
+                "failed": metrics.get("failed_attempts", 0) or 0,
+                "reversed": metrics.get("reversed_attempts", 0) or 0,
+                "no_attempt": metrics.get("no_attempt", 0) or 0,
             },
             "success_rate": round(success_rate, 2),
             "failure_rate": round(failure_rate, 2),
             "amount": {
-                "total_rials": metrics.get("total_amount", 0),
-                "avg_per_attempt_rials": round(metrics.get("avg_amount", 0), 0),
+                "total_rials": total_amount or 0,
+                "avg_per_attempt_rials": round(float(avg_amount), 0),
                 "currency": "IRR",
             },
             "adjusted_fee_total": metrics.get("total_adjusted_fee", 0),
             "fee_note": "adjusted_fee is a confidentiality-scaled value. Only relative comparisons are valid.",
             "how_calculated": {
-                "total_attempts": "COUNT(*) - total payment attempt rows (not unique sessions)",
-                "unique_sessions": "COUNT(DISTINCT session_key) - deduplicated sessions",
-                "success_rate": "((paid_attempts + verified_attempts) / total_attempts) * 100",
-                "failure_rate": "(failed_attempts / total_attempts) * 100",
-                "total_amount": "SUM(amount) - sum of all attempt amounts in Rials",
-                "avg_amount": "AVG(amount) - average amount per attempt in Rials",
+            "total_attempts": "COUNT(*) - total payment attempt rows (not unique sessions)",
+            "unique_sessions": "COUNT(DISTINCT session_key) - deduplicated sessions",
+            "settled_count": "COUNT(*) FILTER (WHERE settled_at IS NOT NULL) - rows with settlement timestamp",
+            "success_rate": "((paid_attempts + verified_attempts) / total_attempts) * 100",
+            "failure_rate": "(failed_attempts / total_attempts) * 100",
+            "total_amount": "SUM(amount) - sum of all attempt amounts in Rials",
+            "avg_amount": "AVG(amount) - average amount per attempt in Rials",
             },
         }
 
@@ -400,12 +403,12 @@ class DuckDBManager:
         query = f"""
             SELECT
                 CAST(created_at AS DATE) AS day,
-                COUNT(*) AS count,
-                SUM(amount) AS amount,
+                COUNT(*) AS daily_count,
+                SUM(amount) AS daily_amount,
                 ROUND(
                     100.0 * SUM(CASE WHEN session_status IN ({STATUS_COMPLETED}) THEN 1 ELSE 0 END)
                     / NULLIF(COUNT(*), 0), 2
-                ) AS success_rate
+                ) AS daily_success_rate
             FROM payments
             {where_clause}
             GROUP BY CAST(created_at AS DATE)

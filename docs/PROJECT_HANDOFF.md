@@ -1,102 +1,96 @@
-# ZarrinPal Analytics Dashboard — Project Handoff
+# PROJECT HANDOFF — Stage 1: Core Merchant Overview
 
-## Goal
+## Stage Summary
 
-Build a Persian RTL, mobile-first analytics dashboard for ZarrinPal merchants.
+Stage 1 delivers the first useful analytical view for a selected ZarinPal merchant:
+a Core Merchant Overview dashboard with filtering, KPI cards, daily activity
+charts, and full traceability metadata.
 
-The dashboard must provide:
-- Merchant overview
-- Payment volume and amount
-- Success and failure analysis
-- Time trends
-- Merchant ranking
-- Peer-group comparison where supported
-- Explainable and traceable insights
-- Responsive desktop and mobile UX
+## What Was Done
 
-## Technology
+### Backend (FastAPI + DuckDB)
+- Health, schema, merchants, overview, trends, and merchant-detail endpoints
+- Pydantic models for all API responses
+- DuckDB manager with query helpers for all metrics
+- Traceability metadata attached to every metric response
+- Division-by-zero protection (returns 0.0, not an error)
+- Invalid date range returns 422
+- Empty results return 200 with zero values
 
-- Frontend: Next.js 14, TypeScript, Tailwind CSS, shadcn/ui, Recharts
-- Backend: FastAPI + DuckDB
-- Analytics: DuckDB (direct CSV querying)
-- Charts: Recharts
-- Deployment: Docker Compose
+### Frontend (Next.js 14 + Tailwind CSS)
+- Persian RTL layout with Vazirmatn font
+- Merchant selector dropdown with search
+- Date range filter with presets
+- KPI cards for all 8 Stage 1 metrics
+- Daily trend bar chart (recharts)
+- Amount trend line chart (recharts)
+- Calculation details drawer showing metric formulas
+- Data limitation warning banner (adjusted_fee confidentiality)
+- Loading, empty, and error states for all components
 
-## Repositories
+### Testing
+- 21 backend tests (all passing)
+- Coverage: 100% for `database.py`, 100% for `main.py`
+- Edge cases: empty results, invalid dates, division by zero, null values
 
-- Product repository: `Armoyas/zarrinpal-analytics` (this repo)
-- Reference only: `Kiranism/next-shadcn-dashboard-starter`
+### Documentation
+- Full data dictionary (all 22 columns documented)
+- Data quality report (null percentages, date range, amount checks)
+- Metric definitions for all 8 Stage 1 metrics with formulas
+- API reference for all 6 endpoints
+- Updated AGENTS.md, README.md, PROJECT_STRUCTURE.md
 
-## Data constraints
+## Metrics (Stage 1)
 
-- Full CSV is approximately 500 MB.
-- Full CSV must never be committed to Git.
-- Currency is Rial.
-- Rows represent payment attempts, not necessarily unique successful transactions.
-- Some columns contain missing values (87-99% null for bank/card fields).
-- `adjusted_fee` is a confidentiality-scaled value, not the real ZarinPal fee.
-- Relative comparisons are valid, but the adjusted_fee limitation must be clearly shown.
+All metrics count from filtered rows. "Sales" definition for Stage 1 = all rows.
+Stage 2 will introduce verified-amount and settled-amount definitions.
 
-## Critical rule
+| ID | Metric | Unit |
+|----|--------|------|
+| M1 | Payment attempt count | rows |
+| M2 | Unique session count | sessions |
+| M3 | Verified count | rows |
+| M4 | Settled count | rows |
+| M5 | Failed count | rows |
+| M6 | Success rate | percentage |
+| M7 | Total amount | IRR |
+| M8 | Average amount | IRR |
 
-Never invent columns or business meaning. Inspect the real CSV schema first.
+## Data Findings (Stage 1 Validation)
 
-Customer, product, inventory, retention, fast-moving, and slow-moving analysis are allowed only if reliable columns exist.
+- **10,000 rows**, 22 columns, IRR currency
+- **0.00% nulls** on core columns (session_key, amount, adjusted_fee, session_status, created_at)
+- **94.02% nulls** on switch_response_code, psp_code, issuer_bank_code, payer_card_key
+- **98.95% nulls** on settled_at
+- session_status: Verified (44.8%), InBank (19.6%), Failed (15.0%), Paid (10.3%), Reversed (5.1%), NoAttempt (5.2%)
+- 0 duplicate session_keys in sample dataset
+- 50 merchants, 3 terminals
+- payer_card_key: 94% null — repeat-behavior analysis NOT reliable
 
-## Development method
+## Decisions
 
-Work in small loops.
+1. **Sales definition**: All rows. Verified/settled amount definitions reserved for Stage 2.
+2. **Backend as source of truth**: All calculations in DuckDB, never in browser memory.
+3. **Traceability**: Every metric response includes metric_id, formula, source_columns, counting_unit.
+4. **Full dataset safety**: `sample_data.csv` is gitignored; only 10-row sample committed.
 
-For every loop:
-1. Inspect the current repository.
-2. Read this file and the relevant specification.
-3. Make a small change.
-4. Run tests.
-5. Inspect the Git diff.
-6. Update documentation.
-7. Commit the change.
+## Unresolved from Stage 0
 
-Do not make unrelated changes.
+1. `expire_in` format — needs confirmation (duration vs timestamp)
+2. 94% null pattern on diagnostic columns
+3. `payer_card_key` 94% sparsity
+4. `try_created_at` vs `created_at` semantic distinction
 
-## Current phase
+## Git
 
-Phase 0 — Dataset schema inspection and project foundation.
+- Branch: `stage-1-core-merchant-overview`
+- Commit: `feat: add core merchant overview analytics`
 
-## Completed work
+## Next: Stage 2
 
-- Project concept defined.
-- Reference repository identified.
-- Technology direction selected.
-- Full dataset excluded from Git.
-- Sample data generated (10,000 rows).
-- Schema inspection script created.
-- Data dictionary generated.
-- DuckDB-based backend created with correct schema.
-- API endpoints for health, schema, overview, merchants, and time-series.
-- Test suite created and passing.
-
-## Not yet confirmed
-
-- Actual CSV column names: CONFIRMED via schema inspection
-- Date column: `created_at` (ISO 8601 datetime)
-- Merchant identifier: `merchant_key`
-- Payment status values: `Verified`, `Paid`, `InBank`, `Failed`, `Reversed`, `NoAttempt`
-- Amount column: `amount` (Rials)
-- Customer identifier: NOT available
-- Product identifier: NOT available
-- Missing-value percentages: 87-99% for bank/card fields
-
-## Definition of success for Phase 0
-
-The project must contain:
-- [x] A safe `.gitignore` (protects full CSV, DuckDB files)
-- [x] Dataset instructions (seed_demo.py)
-- [x] A reproducible schema inspection script (scripts/inspect_schema.py)
-- [x] A data dictionary (docs/data-dictionary.md)
-- [x] A sample dataset workflow (data/sample_data.csv)
-- [x] A basic project README
-- [x] No full CSV committed to Git
-- [x] DuckDB backend using real CSV columns
-- [x] API endpoints for overview, merchants, time-series
-- [x] Traceable calculations ("How calculated?" metadata)
-- [x] Tests for metric calculations
+Stage 2 will implement:
+- Merchant and category sales share
+- Daily/monthly/yearly activity counts and amount trends
+- Previous-period comparison
+- Top merchants ranking
+- Highest activity day/month

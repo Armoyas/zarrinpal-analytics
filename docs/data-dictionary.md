@@ -1,181 +1,86 @@
-# Data Dictionary — ZarrinPal Analytics
+# Data Dictionary
 
-**Source file:** `smaple.csv`
-**Rows:** 19,999
-**Columns:** 22
-**Currency:** Iranian rial (IRR)
-**adjust_fee note:** The `adjusted_fee` column is confidentiality-scaled and must not be presented as the real
-ZarinPal fee. Relative comparisons remain valid.
+## Dataset: ZarinPal Transaction Data
+**Source file**: `data/sample_data.csv` (gitignored)  
+**Sample file**: `data/sample_10_rows.csv` (committed for reference)  
+**Currency**: IRR (Iranian Rial)  
+**Encoding**: UTF-8  
 
-### `session_key`
-- **Type:** integer
-- **Nulls:** 0 (0.00%)
-- **Unique values:** 19506
-- **Min:** 200
-- **Max:** 2062743
-- **Examples:** 1371823, 1303374, 23960, 1648036, 1992156
+## Columns
 
-### `try_seq`
-- **Type:** integer
-- **Nulls:** 0 (0.00%)
-- **Unique values:** 23
-- **Min:** 0
-- **Max:** 22
-- **Examples:** 1, 1, 1, 1, 0
+| # | Column Name | Type | Nullable | Description |
+|---|------------|------|----------|-------------|
+| 1 | `session_key` | VARCHAR | Yes | Unique payment session identifier. May appear in multiple rows if the session has multiple attempts (different `try_seq`). |
+| 2 | `try_seq` | BIGINT | No | Attempt sequence number within a session. `try_seq=0` is typically the first attempt. Multiple rows with the same `session_key` but different `try_seq` represent retry attempts. |
+| 3 | `terminal_key` | VARCHAR | No | Terminal/public key identifier. There are 3 terminal keys in the dataset. |
+| 4 | `merchant_key` | VARCHAR | No | Unique merchant identifier. There are 50 merchants in the dataset. |
+| 5 | `category_id` | BIGINT | No | Merchant category ID. Used for merchant grouping. |
+| 6 | `category_title` | VARCHAR | No | Human-readable category title (e.g., "خرداد 1370"). |
+| 7 | `amount` | BIGINT | No | Payment amount in Iranian Rial (IRR). Range: 61,502 – 49,997,680 IRR. |
+| 8 | `adjusted_fee` | BIGINT | No | Confidentiality-adjusted fee indicator (NOT the real ZarinPal fee). Range: 2,400 – 2,094,075. See **Limitations** below. |
+| 9 | `session_status` | VARCHAR | No | Payment session status. Values: `verified`, `InBank`, `Failed`, `Paid`, `Reversed`, `NoAttempt`. |
+| 10 | `try_status` | VARCHAR | No | Transaction attempt status. Values appear to align with `session_status` but at the attempt level. |
+| 11 | `switch_response_code` | BIGINT | Yes | Payment switch response code. NULL for 94.02% of rows — likely only populated for specific payment flows. |
+| 12 | `psp_code` | BIGINT | Yes | Payment service provider code. NULL for 94.02% of rows. |
+| 13 | `issuer_bank_code` | BIGINT | Yes | Issuer bank identification code. NULL for 94.02% of rows. |
+| 14 | `payer_card_key` | VARCHAR | Yes | Payer card hash identifier. NULL for 94% of rows; max 1 transaction per card — **cannot** reliably support repeat-behavior analysis. |
+| 15 | `verify_type` | VARCHAR | No | Verification type (`"success"`, `"failed"`). Populated for all rows (0.00% null). |
+| 16 | `init_time_ms` | TIMESTAMP | No | Transaction initialization timestamp (milliseconds). Used as the primary transaction time field. |
+| 17 | `verify_time_ms` | TIMESTAMP | Yes | Verification timestamp. NULL for 94% of rows — likely only populated for verified sessions. |
+| 18 | `created_at` | TIMESTAMP | No | Record creation timestamp. |
+| 19 | `try_created_at` | TIMESTAMP | Yes | Attempt creation timestamp. NULL for all rows in the sample dataset. |
+| 20 | `verified_at` | TIMESTAMP | Yes | Verification completion timestamp. NULL for 94.43% of rows. |
+| 21 | `settled_at` | TIMESTAMP | Yes | Settlement timestamp. NULL for 98.95% of rows — settlement is rarely recorded in the sample. |
+| 22 | `expire_in` | INTEGER | No | Expiry time in seconds (or duration). Interpretation: needs confirmation — could be duration in seconds or a timestamp. |
 
-### `terminal_key`
-- **Type:** string
-- **Nulls:** 0 (0.00%)
-- **Unique values:** 29
-- **Examples:** T318, T318, T318, T318, T318
-- **Value counts:** T99: 5915, T196: 5020, T309: 3908, T59: 1804, T261: 1240, T97: 1156, T1: 208, T339: 202, T78: 91, T312: 78
+## Column Groups
 
-### `merchant_key`
-- **Type:** string
-- **Nulls:** 0 (0.00%)
-- **Unique values:** 29
-- **Examples:** M145, M145, M145, M145, M145
-- **Value counts:** M31: 5915, M43: 5020, M208: 3908, M250: 1804, M210: 1240, M37: 1156, M333: 208, M262: 202, M215: 91, M61: 78
+### Identity Columns
+- `session_key`, `try_seq`, `terminal_key`, `merchant_key`
 
-### `category_id`
-- **Type:** integer
-- **Nulls:** 0 (0.00%)
-- **Unique values:** 5
-- **Min:** 48160000
-- **Max:** 82410000
-- **Examples:** 48160002, 48160002, 48160002, 48160002, 48160002
+### Categorization
+- `category_id`, `category_title`
 
-### `category_title`
-- **Type:** string
-- **Nulls:** 0 (0.00%)
-- **Unique values:** 5
-- **Examples:** ارائه دهنده خدمات اینترنت, ارائه دهنده خدمات اینترنت, ارائه دهنده خدمات اینترنت, ارائه دهنده خدمات اینترنت, ارائه دهنده خدمات اینترنت
-- **Value counts:** کیف و کفش فروشی: 6577, مراکز آموزشی مجازی: 6057, خدمات شبکه‌های کامپیوتری و اینترنت: 5807, ارائه دهنده خدمات اینترنت: 1296, فروشگاه لوازم آرایشی و بهداشتی: 262
+### Amounts
+- `amount` (payment amount in IRR)
+- `adjusted_fee` (confidentiality-adjusted indicator — NOT real fee)
 
-### `amount`
-- **Type:** integer
-- **Nulls:** 0 (0.00%)
-- **Unique values:** 747
-- **Min:** 1000
-- **Max:** 901600000
-- **Examples:** 6390000, 6390000, 3690000, 3799000, 12490000
+### Status
+- `session_status` (session-level status)
+- `try_status` (attempt-level status)
+- `verify_type` (verification type)
 
-### `adjusted_fee`
-- **Type:** integer
-- **Nulls:** 0 (0.00%)
-- **Unique values:** 706
-- **Min:** 1920
-- **Max:** 218400
-- **Examples:** 56720, 56720, 35120, 35992, 105520
+### Timestamps
+- `init_time_ms` (transaction init — **primary time field**)
+- `verify_time_ms` (verification time)
+- `created_at` (record creation)
+- `try_created_at` (attempt creation)
+- `verified_at` (verification completion)
+- `settled_at` (settlement)
 
-### `session_status`
-- **Type:** string
-- **Nulls:** 0 (0.00%)
-- **Unique values:** 3
-- **Examples:** Failed, Failed, Failed, Verified, Failed
-- **Value counts:** Failed: 10231, Verified: 9502, Paid: 266
+### Diagnostic
+- `switch_response_code` (payment switch code)
+- `psp_code` (PSP code)
+- `issuer_bank_code` (issuer bank)
+- `payer_card_key` (payer card hash)
+- `expire_in` (expiry/duration)
 
-### `try_status`
-- **Type:** string
-- **Nulls:** 0 (0.00%)
-- **Unique values:** 5
-- **Examples:** Failed, InBank, InBank, Verified, NoAttempt
-- **Value counts:** Verified: 9379, InBank: 8677, NoAttempt: 1488, Paid: 262, Failed: 193
+## Limitations
 
-### `switch_response_code`
-- **Type:** string
-- **Nulls:** 19,302 (96.51%)
-- **Unique values:** 36
-- **Examples:** PSP-05:55, PSP-03:56, PSP-03:56, PSP-03:56, PSP-03:59
-- **Value counts:** PSP-05:12: 99, PSP-03:56: 95, PSP-03:51: 66, PSP-03:-3: 65, PSP-05:21: 63, PSP-05:15: 52, PSP-03:59: 49, PSP-05:-100: 32, PSP-03:54: 29, PSP-03:55: 26
+1. **`adjusted_fee`** is NOT the actual ZarinPal transaction fee. It is a
+   confidentiality-adjusted indicator. Never present it as the real fee.
 
-### `psp_code`
-- **Type:** string
-- **Nulls:** 1,488 (7.44%)
-- **Unique values:** 7
-- **Examples:** PSP-05, PSP-05, PSP-05, PSP-05, PSP-02
-- **Value counts:** PSP-03: 11973, PSP-05: 5853, PSP-07: 344, PSP-04: 184, PSP-01: 85, PSP-06: 44, PSP-02: 28
+2. **`payer_card_key`** is NULL for 94% of rows with a maximum of 1 transaction
+   per card. It cannot reliably support repeat-behavior analysis.
 
-### `issuer_bank_code`
-- **Type:** string
-- **Nulls:** 10,358 (51.79%)
-- **Unique values:** 27
-- **Examples:** BANK-31, BANK-17, BANK-27, BANK-27, BANK-08
-- **Value counts:** BANK-14: 2156, BANK-18: 1868, BANK-31: 1070, BANK-17: 564, BANK-12: 551, BANK-27: 504, BANK-29: 443, BANK-08: 372, BANK-25: 343, BANK-16: 328
+3. **`settled_at`** is NULL for 98.95% of rows. Settlement-based analytics will
+   have very limited data.
 
-### `payer_card_key`
-- **Type:** string
-- **Nulls:** 10,358 (51.79%)
-- **Unique values:** 7865
-- **Examples:** CARD-181237, CARD-145374, CARD-188168, CARD-148656, CARD-192289
-- **Value counts:** CARD-195918: 22, CARD-112072: 21, CARD-163501: 18, CARD-182818: 18, CARD-231451: 15, CARD-322291: 15, CARD-67424: 14, CARD-9194: 14, CARD-280133: 12, CARD-126747: 12
+4. **No `customer_id` or `product_id` columns** — customer analysis, product
+   analysis, and inventory management are not supported.
 
-### `verify_type`
-- **Type:** string
-- **Nulls:** 0 (0.00%)
-- **Unique values:** 2
-- **Examples:** Automated, Automated, Automated, Automated, Automated
-- **Value counts:** Automated: 18730, Manual: 1269
+5. **A row is a payment attempt**, not necessarily a unique transaction.
+   `session_key` may have multiple rows with different `try_seq` values.
 
-### `init_time_ms`
-- **Type:** float
-- **Nulls:** 1,784 (8.92%)
-- **Unique values:** 406
-- **Min:** 53.0
-- **Max:** 32156.0
-- **Examples:** 86.0, 175.0, 201.0, 82.0, 100.0
-
-### `verify_time_ms`
-- **Type:** float
-- **Nulls:** 10,360 (51.80%)
-- **Unique values:** 323
-- **Min:** 51.0
-- **Max:** 11006.0
-- **Examples:** 79.0, 159.0, 139.0, 83.0, 102.0
-
-### `created_at`
-- **Type:** datetime
-- **Nulls:** 0 (0.00%)
-- **Unique values:** 18987
-- **Examples:** 2026-01-02 11:52:56, 2026-01-02 14:25:23, 2026-01-02 21:54:18, 2026-01-03 10:58:55, 2026-01-24 01:26:14
-
-### `try_created_at`
-- **Type:** datetime
-- **Nulls:** 1,488 (7.44%)
-- **Unique values:** 17997
-- **Examples:** 2026-01-02 11:52:56, 2026-01-02 14:25:24, 2026-01-02 21:54:18, 2026-01-03 10:58:55, 2026-01-24 01:30:55
-
-### `verified_at`
-- **Type:** datetime
-- **Nulls:** 10,497 (52.49%)
-- **Unique values:** 9279
-- **Examples:** 2026-01-03 11:00:37, 2026-01-24 12:07:02, 2026-01-25 12:10:17, 2026-01-08 20:13:16, 2026-01-01 14:12:29
-
-### `settled_at`
-- **Type:** datetime
-- **Nulls:** 10,231 (51.16%)
-- **Unique values:** 9546
-- **Examples:** 2026-01-03 11:00:35, 2026-01-24 12:07:00, 2026-01-25 12:10:16, 2026-01-08 20:13:13, 2026-01-01 14:12:27
-
-### `expire_in`
-- **Type:** string
-- **Nulls:** 0 (0.00%)
-- **Unique values:** 18976
-- **Examples:** 2026-01-02 12:22:56, 2026-01-02 14:55:23, 2026-01-02 22:24:18, 2026-01-03 11:28:55, 2026-01-24 01:56:14
-- **Value counts:** 2026-01-24 02:01:44: 22, 2026-01-23 01:06:17: 22, 2026-01-02 18:41:02: 15, 2026-01-24 02:27:01: 14, 2026-01-23 01:21:35: 13, 2026-01-24 01:55:18: 13, 2026-01-24 01:56:33: 13, 2026-01-23 01:00:55: 12, 2026-01-23 01:08:21: 12, 2026-01-23 01:16:20: 12
-
-## Column Analysis
-
-- **Numeric columns:** session_key, try_seq, category_id, amount, adjusted_fee, init_time_ms, verify_time_ms
-- **Datetime columns:** created_at, try_created_at, verified_at, settled_at
-- **Categorical/text columns:** terminal_key, merchant_key, category_title, session_status, try_status, switch_response_code, psp_code, issuer_bank_code, payer_card_key, verify_type, expire_in
-
-## Key Findings
-
-- **Date column:** `created_at` (ISO 8601 datetime)
-- **Merchant identifier:** `merchant_key`
-- **Amount column:** `amount` (Rials)
-- **Status column:** `session_status` with values: Failed, Verified, Paid
-- **adjusted_fee:** Scaled value — relative comparisons only
-- **No reliable `customer_id` column found**
-- **No reliable `product_id` column found**
+6. **`init_time_ms`** is the primary transaction timestamp. Other timestamps
+   (`verify_time_ms`, `verified_at`, `settled_at`) are sparsely populated.

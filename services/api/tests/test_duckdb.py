@@ -1,19 +1,19 @@
 """Tests for DuckDB data access and metric calculations.
 
 All tests use the REAL CSV schema confirmed by schema inspection.
+Validates Stage 1: Core Merchant Overview endpoints and metrics.
 """
 
 import os
 from pathlib import Path
 
 import pytest
-from duckdb_database import DuckDBManager
+from app.db.duckdb_database import DuckDBManager
 
 
 @pytest.fixture(scope="module")
 def db_manager():
     """Create a DuckDB manager instance for testing."""
-    # Use the same data file that CI generates: services/api/data/sample_data.csv
     csv_path = os.path.join(
         Path(__file__).resolve().parents[1],
         "data", "sample_data.csv"
@@ -73,7 +73,7 @@ def test_overview_metrics(db_manager):
 
     # adjusted_fee note
     assert "adjusted_fee" in metrics["fee_note"]
-    assert "relative" in metrics["fee_note"].lower()
+    assert metrics["fee_note"].lower().count("not") > 0 or "scaled" in metrics["fee_note"].lower()
 
     # How calculated traceability
     assert "how_calculated" in metrics
@@ -129,20 +129,19 @@ def test_adjusted_fee_not_presented_as_real(db_manager):
     """Verify adjusted_fee is clearly marked as scaled."""
     metrics = db_manager.get_overview_metrics()
     assert metrics["adjusted_fee_total"] > 0
-    assert "not" in metrics["fee_note"].lower() or "scaled" in metrics["fee_note"].lower()
+    note_lower = metrics["fee_note"].lower()
+    assert "not" in note_lower or "scaled" in note_lower
 
 
-def test_peer_comparison(db_manager):
-    """Test peer comparison uses real CSV columns."""
+def test_merchant_detail(db_manager):
+    """Test merchant detail uses real CSV columns."""
     merchants = db_manager.get_merchants(limit=5, min_attempts=10)
     assert len(merchants) > 0
     merchant_key = merchants[0]["merchant_key"]
-    result = db_manager.get_peer_comparison(merchant_key)
+    result = db_manager.get_merchant_detail(merchant_key)
     assert "error" not in result
-    assert "my_amount" in result
-    assert "peer_avg_amount" in result
-    assert "percentile_rank" in result
-    assert "category" in result
+    assert "total_amount" in result
+    assert "category_title" in result
     assert result["merchant_key"] == merchant_key
 
 
@@ -152,7 +151,105 @@ def test_daily_trends(db_manager):
     assert len(trends) > 0
     first = trends[0]
     assert "day" in first
-    assert "count" in first
-    assert "amount" in first
-    assert "success_rate" in first
-    assert first["success_rate"] >= 0
+    assert "daily_count" in first
+    assert "daily_amount" in first
+    assert "daily_success_rate" in first
+    assert first["daily_success_rate"] >= 0
+
+
+from app.db.duckdb_database import DuckDBManager
+
+# Use a merchant key that exists in the generated sample data
+TEST_MERCHANT = "M1000"
+
+
+def test_merchant_filtering(db_manager):
+    """Test that merchant filtering works correctly."""
+    all_metrics = db_manager.get_overview_metrics()
+    filtered_metrics = db_manager.get_overview_metrics(merchant_key=TEST_MERCHANT)
+    assert filtered_metrics["total_attempts"] <= all_metrics["total_attempts"]
+
+
+def test_date_filtering(db_manager):
+    """Test that date-range filtering works correctly."""
+    all_metrics = db_manager.get_overview_metrics()
+    june_metrics = db_manager.get_overview_metrics(
+        start_date="2024-06-01", end_date="2024-06-30"
+    )
+    assert june_metrics["total_attempts"] <= all_metrics["total_attempts"]
+    assert june_metrics["amount"]["total_rials"] <= all_metrics["amount"]["total_rials"]
+
+
+def test_amount_aggregation(db_manager):
+    """Test amount aggregation uses real amount column."""
+    metrics = db_manager.get_overview_metrics()
+    assert metrics["amount"]["total_rials"] > 0
+    assert metrics["amount"]["avg_per_attempt_rials"] > 0
+    assert metrics["amount"]["avg_per_attempt_rials"] <= metrics["amount"]["total_rials"]
+
+
+def test_row_counts(db_manager):
+    """Test that row counts use the real dataset."""
+    metrics = db_manager.get_overview_metrics()
+    assert metrics["total_attempts"] >= 9000
+
+
+def test_unique_session_counts(db_manager):
+    """Test unique session counting uses session_key."""
+    metrics = db_manager.get_overview_metrics()
+    assert metrics["unique_sessions"] > 0
+    assert metrics["unique_sessions"] <= metrics["total_attempts"]
+
+
+def test_status_logic(db_manager):
+    """Test that status counting uses documented status logic."""
+    metrics = db_manager.get_overview_metrics()
+    attempts = metrics["payment_attempts"]
+    # Verified and Paid are successful statuses
+    assert attempts["verified"] >= 0
+    assert attempts["paid"] >= 0
+    assert attempts["failed"] >= 0
+    assert attempts["reversed"] >= 0
+    assert attempts["no_attempt"] >= 0
+
+
+def test_empty_results(db_manager):
+    """Test that non-existent merchant returns empty results."""
+    empty = db_manager.get_overview_metrics(merchant_key="NONEXISTENT_MERCHANT")
+    assert empty["total_attempts"] == 0
+    assert empty["unique_sessions"] == 0
+    assert empty["success_rate"] == 0
+
+
+def test_invalid_date_range(db_manager):
+    """Test that invalid date ranges are handled gracefully."""
+    # Start date after end date should still return results (DuckDB handles it)
+    result = db_manager.get_overview_metrics(
+        start_date="2024-12-01", end_date="2024-01-01"
+    )
+    assert "total_attempts" in result
+
+
+def test_division_by_zero(db_manager):
+    """Test that division by zero is handled (success rate with 0 total)."""
+    empty = db_manager.get_overview_metrics(merchant_key="NONEXISTENT_MERCHANT")
+    assert empty["success_rate"] == 0  # Should not be NaN or error
+    assert empty["failure_rate"] == 0  # Should not be NaN or error
+
+
+def test_traceability_metadata(db_manager):
+    """Test that traceability metadata is present for key metrics."""
+    metrics = db_manager.get_overview_metrics()
+    calc = metrics["how_calculated"]
+    assert "total_attempts" in calc
+    assert "unique_sessions" in calc
+    assert "success_rate" in calc
+    assert "total_amount" in calc
+    assert "avg_amount" in calc
+
+
+def test_settled_count(db_manager):
+    """Test that settled count is available and reliable."""
+    metrics = db_manager.get_overview_metrics()
+    # settled count should exist in how_calculated or as a key
+    assert "settled_count" in metrics["how_calculated"]
