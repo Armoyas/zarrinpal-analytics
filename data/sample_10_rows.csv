@@ -1,0 +1,11 @@
+session_key,try_seq,terminal_key,merchant_key,category_id,category_title,amount,adjusted_fee,session_status,try_status,switch_response_code,psp_code,issuer_bank_code,payer_card_key,verify_type,init_time_ms,verify_time_ms,created_at,try_created_at,verified_at,settled_at,expire_in
+246993cc-2b64-4906-8d0b-2c0c54c81bf2,1,T5000,M1040,1,آموزش و آموزشگاه,49814611,1839414,InBank,Verified,,,,,Manual,228,,2024-11-21 15:29:34,,,,2024-11-21 15:59:34
+6d961c3a-dd8c-4298-8cb3-4e8b085752b3,8,T5000,M1002,2,خرده‌فروشی آنلاین,14722546,539266,Verified,InBank,,,,,Manual,1166,,2024-08-25 04:59:15,,,,2024-08-25 05:29:15
+f10fc2b8-03b0-4523-8ed6-cf4b7271e37b,6,T5001,M1014,5,سلولتاهای فروشگاهی,486124,19596,InBank,Failed,,,,,Manual,1613,,2024-02-26 18:00:01,,,,2024-02-26 18:30:01
+7739831f-2299-4575-b83f-e72c624a2ad8,4,T5000,M1006,7,صنعتی و ساختگی,6540526,245353,Failed,Verified,,,,,Automated,1148,,2024-09-23 08:27:01,,,,2024-09-23 08:57:01
+7ee93098-57a6-461a-b9ec-25d4cc1acaf1,9,T5000,M1024,5,سلولتاهای فروشگاهی,42237302,1661177,Paid,InBank,,,,,Automated,1404,,2024-01-26 09:18:11,,,,2024-01-26 09:48:11
+5d3c43cb-b21d-4038-867c-0e2d28a25647,7,T5001,M1049,2,خرده‌فروشی آنلاین,15672331,643590,Failed,Verified,,,,,Manual,808,,2024-05-13 03:55:47,,,,2024-05-13 04:25:47
+bc736554-c34b-4353-9afe-e4725fe56e13,9,T5002,M1013,5,سلولتاهای فروشگاهی,47148363,1959324,Verified,Verified,,,,,Automated,551,,2024-07-13 23:03:55,,,,2024-07-13 23:33:55
+779f055d-d358-447b-ad94-cec781bfc2f0,5,T5001,M1029,5,سلولتاهای فروشگاهی,42999656,1712123,InBank,Verified,,,,,Automated,519,,2024-10-10 05:45:33,,,,2024-10-10 06:15:33
+0635696b-bc02-4cbc-8aa9-67fc765e6360,5,T5001,M1020,5,سلولتاهای فروشگاهی,4491842,163848,Paid,InBank,,,,,Manual,1861,,2024-07-01 05:15:56,,,,2024-07-01 05:45:56
+041a2a02-c706-41e3-bbda-9e3cce7b3d4a,9,T5001,M1009,3,سفر و گردشگری,16600891,667603,Verified,Verified,,,,,Automated,791,,2024-07-31 23:44:54,,,,2024-08-01 00:14:54

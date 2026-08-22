@@ -1,0 +1,35 @@
+# Data files — never commit full dataset
+data/*.csv
+data/sample_data.csv
+!data/sample_10_rows.csv
+data/README.md
+
+# Generated artifacts
+docs/schema-summary.json
+*.duckdb
+data/analytics.duckdb
+
+# Environment
+.env
+.env.local
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/dist/
+frontend/.env.local
+
+# Backend
+services/api/__pycache__/
+services/api/venv/
+services/api/.venv/
+**/__pycache__/
+**/*.pyc
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
