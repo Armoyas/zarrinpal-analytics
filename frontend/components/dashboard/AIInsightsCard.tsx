@@ -5,20 +5,21 @@ import { api } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Brain, BarChart3, AlertCircle, Gift } from "lucide-react"
+import { Brain, BarChart3, AlertCircle, Gift, TrendingUp, Users } from "lucide-react"
 import { toPersianNumber } from "@/lib/utils"
 
 const iconMap: Record<string, React.ElementType> = {
-  "high_volume": BarChart3,
-  "low_success": AlertCircle,
-  "card_gift": Gift,
-  "default": Brain,
+  high_volume: BarChart3,
+  low_success: AlertCircle,
+  card_gift: Gift,
+  default: Brain,
 }
 
 export function AIInsightsCard() {
   const { data: result, isLoading } = useQuery({
     queryKey: ["spending-patterns"],
     queryFn: api.getSpendingPatterns,
+    staleTime: 1000 * 60 * 5,
   })
 
   const patterns = result?.patterns
@@ -50,7 +51,7 @@ export function AIInsightsCard() {
   }
 
   return (
-    <Card>
+    <Card className="bg-card/50 border-border/50">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Brain className="h-5 w-5 text-purple-500" />
@@ -63,14 +64,14 @@ export function AIInsightsCard() {
           {patterns.map((pattern, i) => {
             const Icon = iconMap[pattern.pattern] || iconMap["default"]
             return (
-              <div key={i} className="border rounded-lg p-3 space-y-1">
+              <div key={i} className="border rounded-lg p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Icon className="h-4 w-4 text-primary" />
                     <span className="text-sm font-medium">{pattern.description}</span>
                   </div>
                   <Badge variant="secondary">
-                    {toPersianNumber(Math.round(pattern.confidence * 100))}%
+                    {toPersianNumber(Math.round(pattern.confidence))}% اعتماد
                   </Badge>
                 </div>
                 <Badge variant="outline">
@@ -80,6 +81,9 @@ export function AIInsightsCard() {
             )
           })}
         </div>
+        {result?.summary && (
+          <p className="text-xs text-muted-foreground mt-3">{result.summary}</p>
+        )}
       </CardContent>
     </Card>
   )

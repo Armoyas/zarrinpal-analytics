@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Activity, CheckCircle2, AlertCircle } from "lucide-react"
-import { toPersianNumber, formatPercent } from "@/lib/utils"
+import { toPersianNumber, formatPercentValue } from "@/lib/utils"
 
 const severityIcons = {
   low: CheckCircle2,
@@ -23,7 +23,8 @@ const severityColors = {
 export function AnomalyDetector() {
   const { data: anomalies, isLoading } = useQuery({
     queryKey: ["anomalies"],
-    queryFn: api.getAnomalies,
+    queryFn: () => api.getAnomalies(),
+    staleTime: 1000 * 60 * 2,
   })
 
   if (isLoading) {
@@ -80,7 +81,7 @@ export function AnomalyDetector() {
                     <span className="text-sm font-medium">{anomaly.metric}</span>
                   </div>
                   <Badge className={severityColors[anomaly.severity]}>
-                    {formatPercent(anomaly.deviation_pct)}
+                    {formatPercentValue(anomaly.deviation_pct)}
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">{anomaly.description}</p>

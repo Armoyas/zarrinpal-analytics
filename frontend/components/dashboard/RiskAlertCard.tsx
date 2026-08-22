@@ -23,7 +23,8 @@ const trendIcons = {
 export function RiskAlertCard() {
   const { data: alerts, isLoading } = useQuery({
     queryKey: ["risk-alerts"],
-    queryFn: api.getRiskAlerts,
+    queryFn: () => api.getRiskAlerts(),
+    staleTime: 1000 * 60 * 2,
   })
 
   if (isLoading) {

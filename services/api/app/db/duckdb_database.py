@@ -467,7 +467,7 @@ class DuckDBManager:
                     SELECT
                         count() AS total,
                         avg(amount) AS avg_amount,
-                        std(amount) AS std_amount,
+                        stddev(amount) AS std_amount,
                         median(amount) AS median_amount,
                         min(amount) AS min_amount,
                         max(amount) AS max_amount,
@@ -546,8 +546,7 @@ class DuckDBManager:
             weekend_pct = self.conn.execute("""
                 SELECT round(
                     100.0 * count(*) FILTER (
-                        WHERE CAST(strptime(substr(created_at, 1, 19), '%Y-%m-%d %H:%M:%S') AS DATE) %
-                        strftime(CAST(strptime(substr(created_at, 1, 19), '%Y-%m-%d %H:%M:%S') AS DATE), '%w') IN ('0','6')
+                        WHERE CAST(strftime(strptime(SUBSTR(CAST(created_at AS VARCHAR), 1, 19), '%Y-%m-%d %H:%M:%S'), '%w') AS INTEGER) IN (0, 6)
                     ) / count(),
                     2
                 ) FROM payments
@@ -561,7 +560,7 @@ class DuckDBManager:
 
             # Pattern 5: Hour-of-day clustering
             peak_hour = self.conn.execute("""
-                SELECT CAST(hour(strptime(substr(created_at, 1, 19), '%Y-%m-%d %H:%M:%S')) AS INTEGER) AS h,
+                SELECT CAST(hour(strptime(SUBSTR(CAST(created_at AS VARCHAR), 1, 19), '%Y-%m-%d %H:%M:%S')) AS INTEGER) AS h,
                        count() AS c
                 FROM payments
                 WHERE created_at IS NOT NULL
@@ -631,7 +630,7 @@ class DuckDBManager:
             sql = """
                 WITH daily AS (
                     SELECT
-                        CAST(strptime(substr(created_at, 1, 19), '%Y-%m-%d %H:%M:%S') AS DATE) AS date,
+                        CAST(strptime(SUBSTR(CAST(created_at AS VARCHAR), 1, 19), '%Y-%m-%d %H:%M:%S') AS DATE) AS date,
                         count() AS transactions
                     FROM payments
                     WHERE created_at IS NOT NULL
@@ -641,7 +640,7 @@ class DuckDBManager:
                 stats AS (
                     SELECT
                         avg(transactions) AS avg_tx,
-                        sqrt(avg(power(transactions - avg(transactions) OVER (), 2))) AS std_tx
+                        stddev(transactions) AS std_tx
                     FROM daily
                 )
                 SELECT date, transactions FROM daily
@@ -684,8 +683,10 @@ class DuckDBManager:
                 WITH stats AS (
                     SELECT
                         avg(amount) AS avg_amount,
-                        sqrt(avg(power(amount - avg(amount) OVER (), 2))) AS std_amount,
-                        count() AS total_count
+                        stddev(amount) AS std_amount,
+                        count() AS total_count,
+                        approx_quantile(amount, 0.95) AS p95,
+                        approx_quantile(amount, 0.05) AS p05
                     FROM payments
                     WHERE amount > 0
                 )
@@ -698,14 +699,14 @@ class DuckDBManager:
                     s.std_amount,
                     round(100.0 * abs(p.amount - s.avg_amount) / s.avg_amount, 2) AS deviation_pct,
                     CASE
-                        WHEN abs(p.amount - s.avg_amount) > s.std_amount * 3 THEN 'high'
-                        WHEN abs(p.amount - s.avg_amount) > s.std_amount * 2 THEN 'medium'
+                        WHEN p.amount > s.p95 THEN 'high'
+                        WHEN p.amount > s.avg_amount + s.std_amount * 1.5 THEN 'medium'
                         ELSE 'low'
                     END AS severity
                 FROM payments p
                 CROSS JOIN stats s
                 WHERE p.amount > 0
-                    AND abs(p.amount - s.avg_amount) > s.std_amount * 2
+                    AND p.amount > s.p95
                 ORDER BY deviation_pct DESC
                 LIMIT {limit}
             """
@@ -817,7 +818,7 @@ class DuckDBManager:
             # Daily patterns for holiday context (last 62 days)
             daily = self.conn.execute("""
                 SELECT
-                    CAST(strptime(substr(created_at, 1, 19), '%Y-%m-%d %H:%M:%S') AS DATE) AS date,
+                    CAST(strptime(SUBSTR(CAST(created_at AS VARCHAR), 1, 19), '%Y-%m-%d %H:%M:%S') AS DATE) AS date,
                     count() AS tx_count,
                     sum(amount) AS revenue,
                     round(100.0 * count() FILTER (WHERE session_status = 'Paid') / count(), 2) AS sr
@@ -834,7 +835,7 @@ class DuckDBManager:
             gift_card = self.conn.execute("""
                 SELECT
                     count() AS gc_count,
-                    sum(amount) AS gc_revenue,
+                    COALESCE(sum(amount), 0) AS gc_revenue,
                     round(100.0 * count() / (SELECT count() FROM payments), 2) AS share_pct
                 FROM payments
                 WHERE LOWER(category_title) LIKE '%gift%' OR LOWER(category_title) LIKE '%کارت هدیه%'
@@ -878,8 +879,18 @@ class DuckDBManager:
                 recommendations.append("Success rate below 80% — optimize checkout for nowruz traffic.")
             recommendations.append("Gift card merchants show strong seasonal performance — feature in nowruz promotions.")
 
-            nowruz_start = datetime(2025, 3, 21)  # Approximate Nowruz 1404
-            days_until = (nowruz_start - datetime.now()).days
+            # Use the latest data date as the reference for Nowruz calculation
+            max_date_result = self.conn.execute(
+                "SELECT MAX(CAST(created_at AS DATE)) FROM payments"
+            ).fetchone()
+            max_date = max_date_result[0] if max_date_result and max_date_result[0] else datetime.now()
+            if isinstance(max_date, str):
+                max_date = datetime.strptime(max_date, '%Y-%m-%d')
+            if isinstance(max_date, datetime):
+                max_date = max_date.date()
+            # Nowruz is March 21; calculate relative to max data date
+            nowruz_start = datetime(max_date.year, 3, 21).date() if max_date.month >= 3 else datetime(max_date.year + 1, 3, 21).date()
+            days_until = (nowruz_start - max_date).days
 
             return {
                 "period_revenue": ov.get('total_amount', 0),
@@ -887,13 +898,13 @@ class DuckDBManager:
                 "growth_rate": growth,
                 "top_merchants": [],
                 "daily_patterns": [{
-                    "day": d['date'].strftime('%a') if hasattr(d['date'], 'strftime') else str(d['date'])[0:3],
+                    "day": d['date'].strftime('%Y-%m-%d') if hasattr(d['date'], 'strftime') else str(d['date']),
                     "transactions": d['tx_count'],
                     "revenue": d['revenue'] or 0,
                     "gift_card_share": round(gc_data.get('share_pct', 0), 2),
                 } for d in daily_patterns],
                 "gift_card_analysis": {
-                    "total_gift_card_revenue": gc_data.get('gc_revenue', 0),
+                    "total_gift_card_revenue": gc_data.get("gc_revenue", 0),
                     "gift_card_share": gc_data.get('share_pct', 0),
                     "top_gift_card_merchants": top_gc_merchants,
                 },
@@ -916,3 +927,384 @@ class DuckDBManager:
                 "prediction": {"predicted_transactions": 0, "expected_revenue_increase_pct": 35.0, "days_until_nowruz": 0, "confidence": 0},
                 "recommendation": f"Unable to compute nowruz analytics: {e}",
             }
+
+    # ===== High-Value Payment Analysis =====
+
+    def get_high_value_analysis(self, threshold: int = 10000000) -> dict:
+        """Analyze high-value payments above a configurable threshold (IRR)."""
+        conn = self.get_connection()
+        threshold_sql = f"amount >= {threshold}"
+        total_sql = f"amount >= 0"
+
+        # Summary stats
+        overview = conn.execute(f"""
+            SELECT
+                count() AS total_attempts,
+                count() FILTER (WHERE {threshold_sql}) AS high_value_attempts,
+                sum(amount) AS total_amount,
+                sum(CASE WHEN {threshold_sql} THEN amount ELSE 0 END) AS high_value_amount,
+                round(100.0 * count() FILTER (WHERE {threshold_sql}) / nullif(count(), 0), 2) AS pct_of_attempts,
+                round(100.0 * sum(CASE WHEN {threshold_sql} THEN amount ELSE 0 END) / nullif(sum(amount), 0), 2) AS pct_of_amount
+            FROM payments
+            WHERE amount > 0
+        """).fetchone()
+        cols = [d[0] for d in conn.description]
+        overview_data = dict(zip(cols, overview)) if overview else {}
+
+        # By merchant
+        by_merchant = conn.execute(f"""
+            SELECT merchant_key, count() AS cnt, sum(amount) AS amt
+            FROM payments
+            WHERE {threshold_sql}
+            GROUP BY merchant_key
+            ORDER BY amt DESC
+            LIMIT 10
+        """).fetchall()
+        merchant_cols = [d[0] for d in conn.description]
+        top_merchants = [dict(zip(merchant_cols, r)) for r in by_merchant]
+
+        # By category
+        by_category = conn.execute(f"""
+            SELECT category_title, count() AS cnt, sum(amount) AS amt
+            FROM payments
+            WHERE {threshold_sql}
+            GROUP BY category_title
+            ORDER BY amt DESC
+            LIMIT 10
+        """).fetchall()
+        cat_cols = [d[0] for d in conn.description]
+        top_categories = [dict(zip(cat_cols, r)) for r in by_category]
+
+        # Status breakdown
+        status_breakdown = conn.execute(f"""
+            SELECT session_status, count() AS cnt, sum(amount) AS amt
+            FROM payments
+            WHERE {threshold_sql}
+            GROUP BY session_status
+            ORDER BY cnt DESC
+        """).fetchall()
+        status_cols = [d[0] for d in conn.description]
+        status_data = [dict(zip(status_cols, r)) for r in status_breakdown]
+
+        return {
+            "threshold_rial": threshold,
+            "threshold_toman": threshold / 100000,
+            "total_attempts": overview_data.get("total_attempts", 0),
+            "high_value_attempts": overview_data.get("high_value_attempts", 0),
+            "total_amount": overview_data.get("total_amount", 0),
+            "high_value_amount": overview_data.get("high_value_amount", 0),
+            "pct_of_attempts": overview_data.get("pct_of_attempts", 0),
+            "pct_of_amount": overview_data.get("pct_of_amount", 0),
+            "by_merchant": top_merchants,
+            "by_category": top_categories,
+            "status_breakdown": status_data,
+            "how_calculated": {
+                "threshold": f"amount >= {threshold} Rials (₩{threshold/100000:,.0f} Toman)",
+                "high_value_amount": "SUM(amount) WHERE amount >= threshold",
+                "pct_of_amount": "high_value_amount / total_amount * 100",
+            },
+        }
+
+    def get_category_distribution(self) -> list[dict]:
+        """Get category distribution with aggregated metrics."""
+        conn = self.get_connection()
+        rows = conn.execute("""
+            SELECT
+                category_id,
+                category_title,
+                count() AS total_attempts,
+                count(DISTINCT merchant_key) AS merchant_count,
+                sum(amount) AS total_amount,
+                sum(CASE WHEN session_status = 'Paid' THEN 1 ELSE 0 END) AS paid_count,
+                round(100.0 * sum(CASE WHEN session_status = 'Paid' THEN 1 ELSE 0 END) / nullif(count(), 0), 2) AS success_rate_pct,
+                sum(adjusted_fee) AS total_adjusted_fee,
+                round(100.0 * count() * 1.0 / (SELECT count() FROM payments), 2) AS share_pct
+            FROM payments
+            GROUP BY category_id, category_title
+            ORDER BY total_amount DESC
+        """).fetchall()
+        cols = [d[0] for d in conn.description]
+        return [dict(zip(cols, r)) for r in rows]
+
+    def get_status_distribution_by_date(
+        self, start_date: str | None = None, end_date: str | None = None
+    ) -> list[dict]:
+        """Get daily attempt counts by session status."""
+        conn = self.get_connection()
+        where = ""
+        params = []
+        if start_date:
+            where += " AND CAST(created_at AS DATE) >= CAST(? AS DATE)"
+            params.append(start_date)
+        if end_date:
+            where += " AND CAST(created_at AS DATE) <= CAST(? AS DATE)"
+            params.append(end_date)
+        query = f"""
+            SELECT
+                CAST(created_at AS DATE) AS day,
+                session_status,
+                count() AS cnt
+            FROM payments
+            WHERE 1=1 {where}
+            GROUP BY CAST(created_at AS DATE), session_status
+            ORDER BY day, session_status
+        """
+        rows = conn.execute(query, params).fetchall()
+        cols = [d[0] for d in conn.description]
+        results = []
+        for r in rows:
+            d = dict(zip(cols, r))
+            if d.get("day") and hasattr(d["day"], "strftime"):
+                d["day"] = d["day"].strftime("%Y-%m-%d")
+            results.append(d)
+        return results
+
+    # ===== Merchant Detail & Category Analytics =====
+
+    def get_merchant_detail(self, merchant_key: str, start_date: str | None = None, end_date: str | None = None) -> dict:
+        """Comprehensive merchant detail with drill-down metrics.
+
+        Returns overview stats, status breakdown, amount distribution,
+        time trends, and comparison with category peers + overall average.
+        """
+        conn = self.get_connection()
+
+        date_filter = ""
+        date_params = []
+        if start_date:
+            date_filter += " AND CAST(created_at AS DATE) >= CAST(? AS DATE)"
+            date_params.append(start_date)
+        if end_date:
+            date_filter += " AND CAST(created_at AS DATE) <= CAST(? AS DATE)"
+            date_params.append(end_date)
+
+        # Overview
+        overview_sql = f"""
+            SELECT
+                count() AS total_attempts,
+                count(DISTINCT session_key) AS unique_sessions,
+                count() FILTER (WHERE session_status IN ({STATUS_COMPLETED})) AS completed_attempts,
+                count() FILTER (WHERE session_status = 'Paid') AS paid_attempts,
+                count() FILTER (WHERE session_status = 'Verified') AS verified_attempts,
+                count() FILTER (WHERE session_status = 'Failed') AS failed_attempts,
+                count() FILTER (WHERE session_status = 'Reversed') AS reversed_attempts,
+                sum(amount) AS total_amount,
+                round(avg(amount), 0) AS avg_amount,
+                round(median(amount), 0) AS median_amount,
+                max(amount) AS max_amount,
+                min(amount) AS min_amount,
+                sum(adjusted_fee) AS total_adjusted_fee,
+                round(100.0 * count() FILTER (WHERE session_status IN ({STATUS_COMPLETED})) / nullif(count(), 0), 2) AS success_rate
+            FROM payments
+            WHERE merchant_key = ? {date_filter}
+        """
+        row = conn.execute(overview_sql, [merchant_key] + date_params).fetchone()
+        cols = [d[0] for d in conn.description]
+        overview = dict(zip(cols, row)) if row else {}
+
+        # Status breakdown
+        status_sql = f"""
+            SELECT session_status, count() AS cnt, sum(amount) AS amt
+            FROM payments
+            WHERE merchant_key = ? {date_filter}
+            GROUP BY session_status
+            ORDER BY cnt DESC
+        """
+        status_rows = conn.execute(status_sql, [merchant_key] + date_params).fetchall()
+        status_cols = [d[0] for d in conn.description]
+        status_breakdown = [dict(zip(status_cols, r)) for r in status_rows]
+
+        # Daily trend (last 30 days for this merchant)
+        daily_sql = f"""
+            SELECT
+                CAST(created_at AS DATE) AS day,
+                count() AS cnt,
+                sum(amount) AS amt,
+                round(100.0 * count() FILTER (WHERE session_status IN ({STATUS_COMPLETED})) / nullif(count(), 0), 2) AS sr
+            FROM payments
+            WHERE merchant_key = ? {date_filter}
+            GROUP BY CAST(created_at AS DATE)
+            ORDER BY day DESC
+            LIMIT 30
+        """
+        daily_params = [merchant_key] + date_params
+        daily_rows = conn.execute(daily_sql, daily_params).fetchall()
+        daily_cols = [d[0] for d in conn.description]
+        daily_trend = []
+        for r in reversed(daily_rows):
+            d = dict(zip(daily_cols, r))
+            if d.get("day") and hasattr(d["day"], "strftime"):
+                d["day"] = d["day"].strftime("%Y-%m-%d")
+            d["count"] = d.pop("cnt", 0)
+            d["amount"] = d.pop("amt", 0)
+            d["success_rate"] = d.pop("sr", 0)
+            daily_trend.append(d)
+
+        # Get full category ranking to find rank
+        cat_rank_sql = f"""
+            SELECT merchant_key, sum(amount) AS total_amount
+            FROM payments
+            WHERE category_id = (SELECT DISTINCT category_id FROM payments WHERE merchant_key = ? LIMIT 1)
+                {date_filter}
+            GROUP BY merchant_key
+            ORDER BY total_amount DESC
+        """
+        cat_params = [merchant_key] + date_params
+        merchants_in_cat = conn.execute(cat_rank_sql, cat_params).fetchall()
+        merchant_rank = 1
+        total_merchants_in_cat = len(merchants_in_cat)
+        for i, m in enumerate(merchants_in_cat):
+            if m[0] == merchant_key:
+                merchant_rank = i + 1
+                break
+
+        # Category peer average
+        peer_sql = f"""
+            SELECT
+                count() AS total_attempts,
+                sum(amount) AS total_amount,
+                round(avg(amount), 0) AS avg_amount,
+                round(100.0 * count() FILTER (WHERE session_status = 'Paid') / nullif(count(), 0), 2) AS success_rate
+            FROM payments
+            WHERE category_id = (SELECT DISTINCT category_id FROM payments WHERE merchant_key = ? LIMIT 1)
+                AND merchant_key != ?
+                {date_filter}
+        """
+        peer_row = conn.execute(peer_sql, [merchant_key, merchant_key] + date_params).fetchone()
+        peer_cols = [d[0] for d in conn.description]
+        peer_avg = dict(zip(peer_cols, peer_row)) if peer_row else {}
+
+        # Overall average
+        overall_sql = f"""
+            SELECT
+                count() AS total_attempts,
+                sum(amount) AS total_amount,
+                round(avg(amount), 0) AS avg_amount,
+                round(100.0 * count() FILTER (WHERE session_status = 'Paid') / nullif(count(), 0), 2) AS success_rate
+            FROM payments
+            WHERE 1=1 {date_filter}
+        """
+        overall_row = conn.execute(overall_sql, date_params).fetchone()
+        overall_cols = [d[0] for d in conn.description]
+        overall_avg = dict(zip(overall_cols, overall_row)) if overall_row else {}
+
+        # Category and terminal info
+        info_sql = """
+            SELECT DISTINCT category_title, terminal_key
+            FROM payments
+            WHERE merchant_key = ?
+            LIMIT 1
+        """
+        info_row = conn.execute(info_sql, [merchant_key]).fetchone()
+        category_title = info_row[0] if info_row else ""
+        terminal_key = info_row[1] if info_row else ""
+
+        total_amount = overview.get("total_amount", 0) or 0
+        total_attempts = overview.get("total_attempts", 0) or 0
+        success_rate = overview.get("success_rate", 0) or 0
+
+        return {
+            "merchant_key": merchant_key,
+            "category_title": category_title,
+            "terminal_key": terminal_key,
+            "total_attempts": total_attempts,
+            "unique_sessions": overview.get("unique_sessions", 0) or 0,
+            "completed_attempts": overview.get("completed_attempts", 0) or 0,
+            "paid_attempts": overview.get("paid_attempts", 0) or 0,
+            "verified_attempts": overview.get("verified_attempts", 0) or 0,
+            "failed_attempts": overview.get("failed_attempts", 0) or 0,
+            "reversed_attempts": overview.get("reversed_attempts", 0) or 0,
+            "total_amount": total_amount,
+            "avg_amount": overview.get("avg_amount", 0) or 0,
+            "median_amount": overview.get("median_amount", 0) or 0,
+            "max_amount": overview.get("max_amount", 0) or 0,
+            "min_amount": overview.get("min_amount", 0) or 0,
+            "total_adjusted_fee": overview.get("total_adjusted_fee", 0) or 0,
+            "adjusted_fee_share": round(overview.get("total_adjusted_fee", 0) / total_amount * 100, 2) if total_amount > 0 else 0,
+            "success_rate": success_rate,
+            "status_breakdown": status_breakdown,
+            "daily_trend": daily_trend,
+            "merchant_rank": merchant_rank,
+            "total_merchants_in_category": total_merchants_in_cat,
+            "peer_comparison": {
+                "peer_avg_amount": peer_avg.get("avg_amount", 0),
+                "peer_total_amount": peer_avg.get("total_amount", 0),
+                "peer_success_rate": peer_avg.get("success_rate", 0),
+                "overall_avg_amount": overall_avg.get("avg_amount", 0),
+                "overall_success_rate": overall_avg.get("success_rate", 0),
+                "overall_total_amount": overall_avg.get("total_amount", 0),
+            },
+            "how_calculated": {
+                "total_attempts": "COUNT(*) WHERE merchant_key = ? - total payment attempt rows",
+                "unique_sessions": "COUNT(DISTINCT session_key) - deduplicated sessions",
+                "success_rate": "COUNT(completed) / COUNT(*) * 100",
+                "total_amount": "SUM(amount) - all attempt amounts in Rials",
+                "avg_amount": "AVG(amount)",
+                "median_amount": "MEDIAN(amount)",
+                "adjusted_fee_share": "SUM(adjusted_fee) / SUM(amount) * 100",
+            },
+        }
+
+    def get_category_analysis(self, category_id: str | None = None) -> dict:
+        """Analyze payment patterns by merchant category."""
+        conn = self.get_connection()
+
+        where_clause = ""
+        params = []
+        if category_id:
+            where_clause = "WHERE category_id = ?"
+            params = [category_id]
+
+        # Category distribution
+        sql = f"""
+            SELECT
+                category_id,
+                category_title,
+                count() AS total_attempts,
+                count(DISTINCT merchant_key) AS merchant_count,
+                sum(amount) AS total_amount,
+                sum(CASE WHEN session_status = 'Paid' THEN 1 ELSE 0 END) AS paid_count,
+                round(100.0 * sum(CASE WHEN session_status = 'Paid' THEN 1 ELSE 0 END) / nullif(count(), 0), 2) AS success_rate_pct,
+                sum(adjusted_fee) AS total_adjusted_fee
+            FROM payments
+            {where_clause}
+            GROUP BY category_id, category_title
+            ORDER BY total_amount DESC
+        """
+        rows = conn.execute(sql, params).fetchall()
+        cols = [d[0] for d in conn.description]
+        categories = [dict(zip(cols, r)) for r in rows]
+
+        # If specific category, get category-level time series
+        time_series = []
+        if category_id:
+            ts_sql = f"""
+                SELECT
+                    CAST(created_at AS DATE) AS day,
+                    count() AS total_attempts,
+                    sum(amount) AS total_amount,
+                    sum(CASE WHEN session_status = 'Paid' THEN 1 ELSE 0 END) AS paid_count,
+                    round(100.0 * sum(CASE WHEN session_status = 'Paid' THEN 1 ELSE 0 END) / nullif(count(), 0), 2) AS success_rate
+                FROM payments
+                WHERE category_id = ?
+                GROUP BY CAST(created_at AS DATE)
+                ORDER BY day
+            """
+            ts_rows = conn.execute(ts_sql, [category_id]).fetchall()
+            for r in ts_rows:
+                d = dict(zip([d[0] for d in conn.description], r))
+                if d.get("day") and hasattr(d["day"], "strftime"):
+                    d["day"] = d["day"].strftime("%Y-%m-%d")
+                time_series.append(d)
+
+        return {
+            "categories": categories,
+            "category_id": category_id,
+            "time_series": time_series,
+            "total_categories": len(categories),
+            "how_calculated": {
+                "success_rate_pct": "COUNT(status=Paid) / COUNT(*) * 100",
+                "total_amount": "SUM(amount) - all attempt amounts",
+                "adjusted_fee": "SUM(adjusted_fee) - confidentiality-adjusted indicator",
+            },
+        }

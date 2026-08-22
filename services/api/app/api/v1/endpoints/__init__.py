@@ -121,3 +121,120 @@ async def daily_trends(
     Default: last 90 days. Uses real CSV columns.
     """
     return db.get_daily_trends(merchant_key, days)
+
+
+@router.get("/merchants/{merchant_key}")
+async def merchant_detail(
+    merchant_key: str,
+    start_date: Optional[str] = Query(default=None, description="ISO date: 2024-01-01"),
+    end_date: Optional[str] = Query(default=None, description="ISO date: 2024-12-31"),
+):
+    """Get comprehensive merchant detail with drill-down metrics.
+
+    Returns overview stats, status breakdown, amount distribution,
+    time trends, and comparison with category peers + overall average.
+    """
+    result = db.get_merchant_detail(merchant_key, start_date, end_date)
+    if not result.get("total_attempts", 0) and not result.get("error"):
+        raise HTTPException(status_code=404, detail=f"Merchant {merchant_key} not found")
+    return result
+
+
+@router.get("/categories")
+async def categories():
+    """Get all merchant categories with aggregated metrics."""
+    return db.get_category_analysis()
+
+
+@router.get("/categories/distribution")
+async def category_distribution():
+    """Get category distribution with share percentages."""
+    return db.get_category_distribution()
+
+
+@router.get("/categories/{category_id}")
+async def category_detail(category_id: str):
+    """Get detailed category analysis with time series."""
+    return db.get_category_analysis(category_id)
+
+
+@router.get("/high-value/analysis")
+async def high_value_analysis(threshold: int = 10000000):
+    """Analyze high-value payments above a configurable threshold (IRR)."""
+    return db.get_high_value_analysis(threshold)
+
+
+@router.get("/status-distribution/by-date")
+async def status_distribution_by_date(
+    start_date: Optional[str] = Query(default=None),
+    end_date: Optional[str] = Query(default=None),
+):
+    """Get daily attempt counts grouped by session status."""
+    return db.get_status_distribution_by_date(start_date, end_date)
+
+
+@router.get("/ai/chat")
+async def ai_chat(
+    query: str = Query(default="", description="Natural language question about the data"),
+    merchant_key: Optional[str] = Query(default=None),
+    category_id: Optional[str] = Query(default=None),
+):
+    """AI-powered chat assistant for payment analytics.
+
+    Generates natural language insights based on deterministic backend metrics.
+    Never invents data - all responses are grounded in actual DuckDB queries.
+    """
+    insights = []
+
+    # Get relevant data based on query context
+    overview = db.get_overview_metrics()
+    merchants = db.get_merchants(limit=5)
+    spending = db.get_spending_patterns()
+
+    # Determine query intent and generate evidence-based response
+    query_lower = (query or "").lower()
+
+    response_parts = []
+
+    if not query_lower or query_lower in ("help", "stats", "overview"):
+        response_parts.append(f"کل داده: {overview.get('total_attempts', 0):,} تلاش پرداخت با نرخ موفقیت {overview.get('success_rate', 0):.1f}%")
+        response_parts.append(f"مجموع مبالغ: {overview.get('amount', {}).get('total_rials', 0):,} ریال")
+        response_parts.append(f"کارمزد تنظیم‌شده: {overview.get('adjusted_fee_total', 0):,} (نمایانگر نسبی، نه کارمزد واقعی)")
+        response_parts.append(f"فروشگاه‌های فعال: {len(merchants)}")
+
+    # Pattern-based insights
+    for pattern in spending.get("patterns", []):
+        response_parts.append(f"🔎 {pattern['description']} (اعتماد: {pattern['confidence']}%)")
+
+    # Merchant-specific
+    if merchant_key:
+        detail = db.get_merchant_detail(merchant_key)
+        response_parts.append(f"فروشگاه {merchant_key}: {detail.get('total_attempts', 0)} تلاش، نرخ موفقیت {detail.get('success_rate', 0):.1f}%")
+
+    # Risk alerts
+    alerts = db.get_risk_alerts(limit=5)
+    if alerts:
+        response_parts.append(f"⚠️ {len(alerts)} فروشگاه با ریسک بالا شناسایی شد")
+
+    # Anomalies
+    anomalies = db.get_anomaly_detection(limit=5)
+    if anomalies:
+        response_parts.append(f"🔍 {len(anomalies)} ناهنجاری در معاملات ثبت شده")
+
+    # Nowruz analytics
+    if "nowruz" in query_lower or "نوروز" in query_lower:
+        nowruz = db.get_nowruz_analytics()
+        response_parts.append(f"پیش‌بینی نوروز: {nowruz.get('prediction', {}).get('predicted_transactions', 0):,} تراکنش")
+        response_parts.append(f"افزایش درآمد پیش‌بینی شده: +{nowruz.get('prediction', {}).get('expected_revenue_increase_pct', 0):.1f}%")
+        response_parts.append(nowruz.get("recommendation", ""))
+
+    if not response_parts:
+        response_parts.append("سؤال شما در مورد داده‌های پرداخت شما بررسی شود. موارد قابل پرسش: الگوهای مصرف، ریسک‌ها، پیش‌بینی، نوروز، یا جزئیات فروشگاه خاص.")
+
+    return {
+        "query": query,
+        "response": " | ".join(response_parts),
+        "insights": insights,
+        "data_sources": ["payments"],
+        "disclaimer": "تمام پیامدها بر پایه متریک‌های دترمینیستی از DuckDB استخراج شده‌اند. هیچ داده‌ای ساختگی نشده است.",
+    }

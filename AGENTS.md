@@ -178,6 +178,17 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 python scripts/seed_demo.py --rows 100000
 ```
 
+### بارگذاری داده واقعی (Elcamp 1405)
+```bash
+# After cloning:
+cp /path/to/real_data.csv data/sample_data.csv
+docker compose up -d --build
+```
+- داده در `data/` ریشه ریپازیتواری قرار می‌گیرد
+- Docker volume `./data:/app/data` فولدر را به کانتینر مپ می‌کند
+- Backend از مسیر `DATA_FILE` در `config.py` خوانده می‌شود
+- `NEXT_PUBLIC_API_URL=http://api:8000` در `docker-compose.yml` تنظیم شده
+
 ---
 
 ## Troubleshooting
