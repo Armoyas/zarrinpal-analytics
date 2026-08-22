@@ -18,7 +18,7 @@ const iconMap: Record<string, React.ElementType> = {
 export function AIInsightsCard() {
   const { data: result, isLoading } = useQuery({
     queryKey: ["spending-patterns"],
-    queryFn: api.getSpendingPatterns,
+    queryFn: () => api.getSpendingPatterns(),
     staleTime: 1000 * 60 * 5,
   })
 

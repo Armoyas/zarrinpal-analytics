@@ -60,12 +60,22 @@ class DuckDBManager:
         tables = conn.execute(
             "SELECT table_name FROM information_schema.tables WHERE table_name = 'payments'"
         ).fetchall()
+        # Check if table exists AND has data; drop and recreate if empty (stale db)
         if not tables:
-            csv_path = Path(self.csv_path)
-            if not csv_path.exists():
-                raise FileNotFoundError(f"CSV not found: {self.csv_path}")
-            conn.execute(f"CREATE TABLE payments AS SELECT * FROM read_csv_auto('{self.csv_path}')")
-            conn.commit()
+            self._load_csv(conn)
+        else:
+            count = conn.execute("SELECT COUNT(*) FROM payments").fetchone()[0]
+            if count == 0:
+                conn.execute("DROP TABLE IF EXISTS payments")
+                self._load_csv(conn)
+
+    def _load_csv(self, conn):
+        """Load CSV data into the payments table."""
+        csv_path = Path(self.csv_path)
+        if not csv_path.exists():
+            raise FileNotFoundError(f"CSV not found: {self.csv_path}")
+        conn.execute(f"CREATE TABLE payments AS SELECT * FROM read_csv_auto('{self.csv_path}')")
+        conn.commit()
 
     def close(self):
         if self._conn:

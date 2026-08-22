@@ -17,6 +17,9 @@ COPY app/ app/
 # Create data directory (mounted at runtime)
 RUN mkdir -p /app/data
 
+# Remove any stale DuckDB database files (from build time) so data loads from the runtime CSV
+RUN rm -f /app/data/analytics.duckdb /app/data/analytics.duckdb.wal
+
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "rm -f /app/data/analytics.duckdb /app/data/analytics.duckdb.wal && uvicorn app.main:app --host 0.0.0.0 --port 8000"]

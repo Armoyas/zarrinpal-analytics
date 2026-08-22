@@ -14,7 +14,7 @@ const COLORS = ["hsl(38 100% 45%)", "hsl(220 70% 50%)", "hsl(150 70% 50%)", "hsl
 export function SpendingPatternsChart() {
   const { data: result, isLoading } = useQuery({
     queryKey: ["spending-patterns-chart"],
-    queryFn: api.getSpendingPatterns,
+    queryFn: () => api.getSpendingPatterns(),
     staleTime: 1000 * 60 * 5,
   })
 

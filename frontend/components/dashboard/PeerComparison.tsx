@@ -71,15 +71,19 @@ export function PeerComparison({ merchantKey }: { merchantKey?: string | null })
     )
   }
 
-  // Use real peer comparison data
+  // Use real peer comparison data from both endpoints
+  const peer = merchantDetail?.peer_comparison
   const percentile = peerData?.percentile_rank || 0
   const successRate = merchantDetail?.success_rate || 0
   const avgAmount = merchantDetail?.avg_amount || 0
-  const peerAvgAmount = peerData?.peer_avg_amount || 0
-  const peerSuccessRate = peerData?.peer_success_rate || 0
+  const peerAvgAmount = peer?.peer_avg_amount || peerData?.peer_avg_amount || 0
+  const peerSuccessRate = peer?.peer_success_rate || 0
   const totalAttempts = merchantDetail?.total_attempts || 0
+  const overallAvgAmount = peer?.overall_avg_amount || 0
+  const overallTotalAmount = peer?.overall_total_amount || 0
+  const overallSuccessRate = peer?.overall_success_rate || 0
 
-  const peerAvgTransactionRatio = peerAvgAmount > 0 ? (avgAmount / peerAvgAmount) * 100 - 100 : 0
+  const peerAvgTransactionRatio = peerAvgAmount > 0 ? ((avgAmount / peerAvgAmount - 1) * 100) : 0
   const rateDiff = successRate - peerSuccessRate
 
   return (
@@ -164,11 +168,11 @@ export function PeerComparison({ merchantKey }: { merchantKey?: string | null })
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">میانگین مبلغ کلی:</span>
-              <span>{formatCurrencyIRToman(peerData?.overall_avg_amount || 0)}</span>
+              <span>{formatCurrencyIRToman(overallAvgAmount)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">نرخ موفقیت هم‌دستگان:</span>
-              <span>{formatPercentValue(peerSuccessRate)}</span>
+              <span className="text-muted-foreground">نرخ موفقیت کلی:</span>
+              <span>{formatPercentValue(overallSuccessRate)}</span>
             </div>
           </div>
         )}

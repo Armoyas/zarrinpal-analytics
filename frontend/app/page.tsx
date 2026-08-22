@@ -60,7 +60,7 @@ export default function DashboardPage() {
 
   const { data: categoryData, isLoading: categoryLoading } = useQuery({
     queryKey: ["category-distribution"],
-    queryFn: api.getCategoryDistribution,
+    queryFn: () => api.getCategoryDistribution(),
     staleTime: 1000 * 60 * 5,
   })
 
@@ -72,7 +72,7 @@ export default function DashboardPage() {
 
   const { data: statusData, isLoading: statusLoading } = useQuery({
     queryKey: ["status-distribution"],
-    queryFn: api.getStatusDistribution,
+    queryFn: () => api.getStatusDistribution(),
     staleTime: 1000 * 60 * 5,
   })
 

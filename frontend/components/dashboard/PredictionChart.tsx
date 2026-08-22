@@ -16,7 +16,7 @@ import {
 export function PredictionChart() {
   const { data: predictions, isLoading } = useQuery({
     queryKey: ["ai-predictions"],
-    queryFn: api.getAIPredictions,
+    queryFn: () => api.getAIPredictions(),
   })
 
   if (isLoading) {

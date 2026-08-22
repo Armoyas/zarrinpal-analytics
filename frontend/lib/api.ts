@@ -186,9 +186,9 @@ export interface MerchantDetail {
   merchant_rank: number
   total_merchants_in_category: number
   peer_comparison: {
-    peer_avg_amount: number
-    peer_total_amount: number
-    peer_success_rate: number
+    peer_avg_amount: number | null
+    peer_total_amount: number | null
+    peer_success_rate: number | null
     overall_avg_amount: number
     overall_success_rate: number
     overall_total_amount: number
@@ -328,7 +328,7 @@ export const api = {
     fetchAPI<HighValueAnalysis>(`/api/v1/high-value/analysis?threshold=${threshold}`),
 
   getStatusDistribution: () =>
-    fetchAPI<any[]>('/api/v1/status-distribution'),
+    fetchAPI<any[]>('/api/v1/schema/status-distribution'),
 
   getStatusDistributionByDate: (start_date?: string, end_date?: string) => {
     const params = new URLSearchParams()

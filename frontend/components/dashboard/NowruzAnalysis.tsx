@@ -11,7 +11,7 @@ import { toPersianNumber, formatCurrencyIRToman, formatPercentValue } from "@/li
 export function NowruzAnalysis() {
   const { data: nowruzData, isLoading } = useQuery({
     queryKey: ["nowruz-analytics"],
-    queryFn: api.getNowruzAnalytics,
+    queryFn: () => api.getNowruzAnalytics(),
     staleTime: 1000 * 60 * 5,
   })
 
