@@ -81,7 +81,7 @@ class DuckDBManager:
         if not csv_path.exists():
             raise FileNotFoundError(f"CSV not found: {self.csv_path}")
         # Use read_csv with explicit options for robustness with Persian text
-        # and mixed line endings (\r\n). Always DROPTABLE and reload to handle
+        # and mixed line endings (\r\n). Always DROP TABLE and reload to handle
         # stale databases from Docker build time vs. runtime volume mounts.
         conn.execute("DROP TABLE IF EXISTS payments")
         conn.execute(
