@@ -88,7 +88,7 @@ class DuckDBManager:
             f"CREATE TABLE payments AS "
             f"SELECT "
             f"  CAST(session_key AS VARCHAR) AS session_key,"
-            f"  CAST(try_seq AS INTEGER) AS try_seq,"
+            f"  TRY_CAST(try_seq AS INTEGER) AS try_seq,"
             f"  CAST(terminal_key AS VARCHAR) AS terminal_key,"
             f"  CAST(merchant_key AS VARCHAR) AS merchant_key,"
             f"  CAST(category_id AS VARCHAR) AS category_id,"
@@ -102,15 +102,15 @@ class DuckDBManager:
             f"  CAST(issuer_bank_code AS VARCHAR) AS issuer_bank_code,"
             f"  CAST(payer_card_key AS VARCHAR) AS payer_card_key,"
             f"  CAST(verify_type AS VARCHAR) AS verify_type,"
-            f"  TRY_CAST(init_time_ms AS INTEGER) AS init_time_ms,"
-            f"  TRY_CAST(verify_time_ms AS INTEGER) AS verify_time_ms,"
+            f"  TRY_TRY_CAST(init_time_ms AS INTEGER) AS init_time_ms,"
+            f"  TRY_TRY_CAST(verify_time_ms AS INTEGER) AS verify_time_ms,"
             f"  TRY_CAST(CAST(created_at AS VARCHAR) AS TIMESTAMP) AS created_at,"
             f"  TRY_CAST(CAST(try_created_at AS VARCHAR) AS TIMESTAMP) AS try_created_at,"
             f"  TRY_CAST(CAST(verified_at AS VARCHAR) AS TIMESTAMP) AS verified_at,"
             f"  TRY_CAST(CAST(settled_at AS VARCHAR) AS TIMESTAMP) AS settled_at,"
-            f"  TRY_CAST(expire_in AS INTEGER) AS expire_in"
+            f"  TRY_TRY_CAST(expire_in AS INTEGER) AS expire_in"
             f" FROM read_csv('"
-            f"{self.csv_path}', header=true, sep=',', quote='\"', null='')"
+            f"{self.csv_path}', header=true, sep=',', quote='\"', nullstr='', all_varchar=true)"
         )
         count = conn.execute("SELECT COUNT(*) FROM payments").fetchone()[0]
         print(f"Database loaded: {count} rows from {self.csv_path}")
