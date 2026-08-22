@@ -57,24 +57,39 @@ class DuckDBManager:
 
     def _ensure_table(self):
         conn = self.get_connection()
-        tables = conn.execute(
-            "SELECT table_name FROM information_schema.tables WHERE table_name = 'payments'"
-        ).fetchall()
-        # Check if table exists AND has data; drop and recreate if empty (stale db)
-        if not tables:
-            self._load_csv(conn)
-        else:
-            count = conn.execute("SELECT COUNT(*) FROM payments").fetchone()[0]
-            if count == 0:
-                conn.execute("DROP TABLE IF EXISTS payments")
+        try:
+            tables = conn.execute(
+                "SELECT table_name FROM information_schema.tables WHERE table_name = 'payments'"
+            ).fetchall()
+            needs_load = False
+            if not tables:
+                needs_load = True
+            else:
+                count = conn.execute("SELECT COUNT(*) FROM payments").fetchone()[0]
+                if count == 0:
+                    needs_load = True
+            if needs_load:
+                if tables:
+                    conn.execute("DROP TABLE IF EXISTS payments")
                 self._load_csv(conn)
+        except FileNotFoundError as e:
+            print(f"WARNING: {e}")
 
     def _load_csv(self, conn):
         """Load CSV data into the payments table."""
         csv_path = Path(self.csv_path)
         if not csv_path.exists():
             raise FileNotFoundError(f"CSV not found: {self.csv_path}")
-        conn.execute(f"CREATE TABLE payments AS SELECT * FROM read_csv_auto('{self.csv_path}')")
+        # Use read_csv with explicit options for robustness with Persian text
+        # and mixed line endings (\r\n). Always DROPTABLE and reload to handle
+        # stale databases from Docker build time vs. runtime volume mounts.
+        conn.execute("DROP TABLE IF EXISTS payments")
+        conn.execute(
+            f"CREATE TABLE payments AS SELECT * FROM read_csv("
+            f"'{self.csv_path}', header=true, sep=',', quote='\"')"
+        )
+        count = conn.execute("SELECT COUNT(*) FROM payments").fetchone()[0]
+        print(f"Database loaded: {count} rows from {self.csv_path}")
         conn.commit()
 
     def close(self):
