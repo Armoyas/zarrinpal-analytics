@@ -20,9 +20,9 @@ echo "Updating system packages..."
 apt-get update -qq
 apt-get upgrade -y -qq
 
-# Install prerequisites (without Docker — Docker can have conflicts on some distros)
+# Install prerequisites including SSH server (for remote management/cron access)
 echo "Installing prerequisites..."
-apt-get install -y -qq --no-install-recommends python3 python3-pip python3-venv nginx curl git unzip
+apt-get install -y -qq --no-install-recommends python3 python3-pip python3-venv nginx curl git unzip openssh-server
 
 # Install Docker separately (handles conflicts gracefully)
 echo "Setting up Docker..."
@@ -57,6 +57,29 @@ if command -v docker &> /dev/null; then
         (dockerd &) || (service docker start) || echo "Docker may already be running"
     fi
     usermod -aG docker root 2>/dev/null || true
+fi
+
+# Set up SSH server (for cron job remote access and manual management)
+echo "Setting up SSH server..."
+if [ -d /etc/ssh ]; then
+    # Generate host keys if they don't exist
+    if [ ! -f /etc/ssh/ssh_host_rsa_key ]; then
+        ssh-keygen -A -v 2>/dev/null
+    fi
+    # Enable password authentication for root
+    sed -i 's/#PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config 2>/dev/null || true
+    sed -i 's/PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config 2>/dev/null || true
+    # Allow root login
+    sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config 2>/dev/null || true
+    sed -i 's/PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config 2>/dev/null || true
+    # Start SSH service
+    if command -v systemctl &> /dev/null && pidof systemd &> /dev/null; then
+        systemctl enable ssh 2>/dev/null || systemctl enable sshd 2>/dev/null || true
+        systemctl start ssh 2>/dev/null || systemctl start sshd 2>/dev/null || true
+    else
+        (mkdir -p /run/sshd && /usr/sbin/sshd 2>/dev/null) || echo "SSH daemon may need manual start"
+    fi
+    echo "SSH server configured (root login with password enabled)"
 fi
 
 # Create app directory
@@ -155,25 +178,55 @@ ln -sf /etc/nginx/sites-available/zarrinpal /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 
 # Enable and start services
-systemctl daemon-reload
-systemctl enable nginx
-systemctl enable zarrinpal-api.service
-systemctl enable zarrinpal-frontend.service
+HAS_SYSTEMD=false
+if command -v systemctl &> /dev/null && pidof systemd &> /dev/null; then
+    HAS_SYSTEMD=true
+fi
 
-echo "Starting services..."
-systemctl start nginx
-systemctl start zarrinpal-api.service
-systemctl start zarrinpal-frontend.service
+if [ "$HAS_SYSTEMD" = "true" ]; then
+    # Systemd-based startup (traditional server)
+    systemctl daemon-reload
+    systemctl enable nginx
+    systemctl enable zarrinpal-api.service
+    systemctl enable zarrinpal-frontend.service
 
-# Wait for services to start
-sleep 5
+    echo "Starting services..."
+    systemctl start nginx
+    systemctl start zarrinpal-api.service
+    systemctl start zarrinpal-frontend.service
 
-echo "=== Deployment Complete ==="
-echo "API: http://62.60.198.209:8000"
-echo "Dashboard: http://62.60.198.209"
-echo "API Health: http://62.60.198.209/api/v1/health"
+    sleep 5
 
-# Show service status
-systemctl status zarrinpal-api.service --no-pager
-systemctl status zarrinpal-frontend.service --no-pager
-systemctl status nginx --no-pager
+    echo "=== Deployment Complete ==="
+    echo "API: http://62.60.198.209:8000"
+    echo "Dashboard: http://62.60.198.209"
+    echo "API Health: http://62.60.198.209/api/v1/health"
+
+    systemctl status zarrinpal-api.service --no-pager
+    systemctl status zarrinpal-frontend.service --no-pager
+    systemctl status nginx --no-pager
+else
+    # Docker Compose-based startup (container environment without systemd)
+    echo "Systemd not available, using Docker Compose..."
+    if ! docker compose version &> /dev/null 2>&1; then
+        echo "Docker Compose not available, installing..."
+        apt-get install -y -qq docker-compose 2>/dev/null || true
+    fi
+
+    # Stop existing containers
+    docker compose down 2>/dev/null || true
+
+    # Build and start services
+    docker compose up -d --build
+
+    # Wait for services to start
+    sleep 10
+
+    echo "=== Deployment Complete ==="
+    echo "Dashboard: http://62.60.198.209"
+    echo "API: http://62.60.198.209:8000"
+    echo "API Health: http://62.60.198.209/api/v1/health"
+
+    # Show container status
+    docker compose ps
+fi
