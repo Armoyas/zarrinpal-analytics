@@ -264,7 +264,7 @@ function transformTimeSeries(backendData: TimeSeriesPoint[], amountData?: TimeSe
   if (!amountData) amountData = backendData
   const countMap = new Map(backendData.map(d => [d.time_period, d.value]))
   const amountMap = new Map(amountData.map(d => [d.time_period, d.value]))
-  const allKeys = new Set([...countMap.keys(), ...amountMap.keys()])
+  const allKeys = new Set<string>([...Array.from(countMap.keys()), ...Array.from(amountMap.keys())])
   return Array.from(allKeys).sort().map(key => ({
     date: key,
     count: countMap.get(key) || 0,
