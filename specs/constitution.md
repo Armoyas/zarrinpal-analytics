@@ -84,8 +84,21 @@ build.
 comparisons, sales share, high-value payment detection, AI-powered insights,
 Nowruz analysis, real-time fraud detection.
 
-**Future stages:** Advanced analytics, merchant performance, sales share,
-high-value payments, AI-powered insights.
+**Stage 2 (Sales Share & Time-Based Analytics):** Merchant/category sales-share
+analysis using the "successful amount" definition (session_status IN
+'Verified', 'Paid', 'Reversed'). Daily/monthly/yearly activity trends,
+merchant ranking by amount and count, peak-day/month identification, and
+previous-period comparison. Exposes both "total attempted amount" (Stage 1)
+and "successful amount" with clear labels.
+
+**Stage 3 (Adjusted-Fee Analysis):** Dedicated analytical section for the
+confidentiality-adjusted fee indicator. Never presents adjusted_fee as the
+actual ZarinPal fee. Implements total/average indicator, fee trend, fee by
+merchant, fee by category, fee share of amount, and relative rankings. All
+visualizations display the confidentiality warning.
+
+**Stage 3 Out of Scope:** High-value payment detection, AI-powered insights,
+Nowruz analysis, real-time fraud detection.
 
 ## SDLC / SDD Workflow
 

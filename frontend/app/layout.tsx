@@ -10,7 +10,7 @@ const vazirmatn = Vazirmatn({
 
 export const metadata: Metadata = {
   title: "داشبورد تحلیلی زرین‌پال",
-  description: "داشبورد تحلیلی برای فروشندگان زرین‌پال — فاز 1: نمای کلی فروشنده",
+  description: "داشبورد تحلیلی برای فروشندگان زرین‌پال — فاز 3: تحلیل کارمزد تنظیم‌شده، سهم فروش، و فعالیت زمانی",
 };
 
 export default function RootLayout({

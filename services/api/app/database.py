@@ -63,7 +63,7 @@ def _ensure_table() -> None:
     db.sql(f"DROP TABLE IF EXISTS {TABLE_NAME}")
     db.sql(f"""
         CREATE TABLE {TABLE_NAME} AS
-        SELECT * FROM read_csv('{DATA_FILE}', header=true, sep=',')
+        SELECT * FROM read_csv_auto('{DATA_FILE}', header=true, sep=',', strict_mode=false)
     """)
 
 
@@ -381,3 +381,749 @@ def get_daily_trends(
             "failed": row_dict["failed"],
         })
     return results
+
+
+# ---------------------------------------------------------------------------
+# Stage 2 — Sales Share & Time-Based Analytics
+# ---------------------------------------------------------------------------
+
+# Sales definition for Stage 2:
+# "Sales" = amount from rows where session_status IN ('Verified', 'Paid', 'Reversed')
+# These represent completed/successful payment outcomes.
+# This is a COUNTING unit of 'row' but the business meaning is 'successful amount'.
+SALES_STATUSES = "'Verified', 'Paid', 'Reversed'"
+
+
+def _successful_filter() -> str:
+    """Return SQL fragment for successful payment statuses."""
+    return f"session_status IN ({SALES_STATUSES})"
+
+
+def _activity_trend(
+    merchant_key: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    interval: str = "day",
+) -> list[dict[str, Any]]:
+    """Return time-series aggregation for a given interval (day/month/year).
+
+    Uses created_at for grouping. Returns one entry per time bucket with:
+      - time_period (str): bucket label
+      - attempts (int): COUNT(*)
+      - amount (int): SUM(amount)
+      - successful_amount (int): SUM(amount) for verified payments
+      - success_rate (float): successful/attempts * 100
+    """
+    db = get_db()
+    filt = _full_filter(merchant_key, start_date, end_date)
+
+    if interval == "day":
+        group_expr = "CAST(created_at AS DATE)"
+        alias = "date"
+    elif interval == "month":
+        group_expr = "strftime(CAST(created_at AS TIMESTAMP), '%Y-%m')"
+        alias = "month"
+    elif interval == "year":
+        group_expr = "strftime(CAST(created_at AS TIMESTAMP), '%Y')"
+        alias = "year"
+    else:
+        raise ValueError(f"Unknown interval: {interval}")
+
+    query = f"""
+        SELECT
+            {group_expr} AS time_period,
+            COUNT(*) AS attempts,
+            COALESCE(SUM(amount), 0) AS amount,
+            COALESCE(SUM(CASE WHEN session_status IN ({SALES_STATUSES}) THEN amount ELSE 0 END), 0) AS successful_amount,
+            ROUND(COALESCE(COUNT(CASE WHEN session_status IN ({SALES_STATUSES}) THEN 1 END), 0) * 100.0 / COUNT(*), 2) AS success_rate
+        FROM zp_data
+        {filt}
+        GROUP BY {group_expr}
+        ORDER BY time_period
+    """
+    result = db.sql(query)
+    cols = [d[0] for d in result.description]
+    rows = result.fetchall()
+    results: list[dict[str, Any]] = []
+    for row in rows:
+        row_dict = dict(zip(cols, row))
+        row_dict["time_period"] = str(row_dict["time_period"])
+        results.append(row_dict)
+    return results
+
+
+def get_daily_activity(
+    merchant_key: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> dict[str, Any]:
+    """Return daily payment count trend (Stage 2).
+
+    Counting unit: row (payment attempt)
+    """
+    db = get_db()
+    filt = _full_filter(merchant_key, start_date, end_date)
+    data = _activity_trend(merchant_key, start_date, end_date, interval="day")
+    filters: dict[str, Any] = {}
+    if merchant_key:
+        filters["merchant_key"] = merchant_key
+    if start_date:
+        filters["start_date"] = start_date
+    if end_date:
+        filters["end_date"] = end_date
+
+    return {
+        "merchant_key": merchant_key or "ALL",
+        "time_range": {
+            "start": start_date or "1300-01-01",
+            "end": end_date or "1450-12-30",
+        },
+        "daily_activity": data,
+        "traceability": {
+            "metric_id": "daily_payment_count",
+            "definition": "Daily count of payment attempt rows, with successful-amount and success-rate trend.",
+            "formula": "GROUP BY CAST(created_at AS DATE) → COUNT(*), SUM(amount), SUM(CASE WHEN session_status IN ('Verified','Paid','Reversed') THEN amount ELSE 0 END), success_rate",
+            "source_columns": ["created_at", "session_key", "amount", "session_status"],
+            "counting_unit": "row",
+            "filters": filters,
+            "limitations": "Based on created_at only. settled_at is ~99% null.",
+        },
+    }
+
+
+def get_monthly_activity(
+    merchant_key: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> dict[str, Any]:
+    """Return monthly payment count trend (Stage 2).
+
+    Counting unit: row (payment attempt)
+    """
+    db = get_db()
+    data = _activity_trend(merchant_key, start_date, end_date, interval="month")
+    filters: dict[str, Any] = {}
+    if merchant_key:
+        filters["merchant_key"] = merchant_key
+    if start_date:
+        filters["start_date"] = start_date
+    if end_date:
+        filters["end_date"] = end_date
+
+    return {
+        "merchant_key": merchant_key or "ALL",
+        "monthly_activity": data,
+        "traceability": {
+            "metric_id": "monthly_payment_count",
+            "definition": "Monthly count of payment attempt rows, with amount trend and success rate.",
+            "formula": "GROUP BY strftime(CAST(created_at AS TIMESTAMP), '%Y-%m') → COUNT(*), SUM(amount), success_rate",
+            "source_columns": ["created_at", "session_key", "amount", "session_status"],
+            "counting_unit": "row",
+            "filters": filters,
+            "limitations": "Based on created_at. Monthly buckets derive from created_at timestamp.",
+        },
+    }
+
+
+def get_yearly_activity(
+    merchant_key: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> dict[str, Any]:
+    """Return yearly payment count trend (Stage 2).
+
+    Counting unit: row (payment attempt)
+    """
+    db = get_db()
+    data = _activity_trend(merchant_key, start_date, end_date, interval="year")
+    filters: dict[str, Any] = {}
+    if merchant_key:
+        filters["merchant_key"] = merchant_key
+    if start_date:
+        filters["start_date"] = start_date
+    if end_date:
+        filters["end_date"] = end_date
+
+    return {
+        "merchant_key": merchant_key or "ALL",
+        "yearly_activity": data,
+        "traceability": {
+            "metric_id": "yearly_payment_count",
+            "definition": "Yearly count of payment attempt rows, with amount and success rate.",
+            "formula": "GROUP BY strftime(CAST(created_at AS TIMESTAMP), '%Y') → COUNT(*), SUM(amount), success_rate",
+            "source_columns": ["created_at", "session_key", "amount", "session_status"],
+            "counting_unit": "row",
+            "filters": filters,
+            "limitations": "Based on created_at year extraction.",
+        },
+    }
+
+
+def get_merchant_ranking(
+    by: str = "amount",
+    merchant_key: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> dict[str, Any]:
+    """Rank merchants by amount or count (Stage 2).
+
+    Counting unit depends on 'by':
+      - by='amount': row (sum of amount)
+      - by='count': row (COUNT(*))
+    """
+    db = get_db()
+    filt = _full_filter(merchant_key, start_date, end_date)
+    if by == "count":
+        metric = "COUNT(*)"
+        label_key = "attempt_count"
+    else:
+        metric = "COALESCE(SUM(amount), 0)"
+        label_key = "total_amount"
+
+    query = f"""
+        SELECT
+            merchant_key,
+            COALESCE(SUM(amount), 0) AS total_amount,
+            COUNT(*) AS attempt_count,
+            COUNT(CASE WHEN session_status = 'Verified' THEN 1 END) AS verified_count,
+            ROUND(COALESCE(COUNT(CASE WHEN session_status IN ({SALES_STATUSES}) THEN 1 END), 0) * 100.0 / COUNT(*), 2) AS success_rate
+        FROM zp_data
+        {filt}
+        GROUP BY merchant_key
+        ORDER BY {metric} DESC
+    """
+    result = db.sql(query)
+    cols = [d[0] for d in result.description]
+    rows = result.fetchall()
+    rankings = [dict(zip(cols, row)) for row in rows]
+
+    filters: dict[str, Any] = {}
+    if merchant_key:
+        filters["merchant_key"] = merchant_key
+    if start_date:
+        filters["start_date"] = start_date
+    if end_date:
+        filters["end_date"] = end_date
+
+    return {
+        "ranking_by": by,
+        "total_merchants": len(rankings),
+        "rankings": rankings,
+        "traceability": {
+            "metric_id": f"merchant_ranking_{by}",
+            "definition": f"Merchant ranking by {by}. Amount uses SUM(amount) across all rows; count uses COUNT(*).",
+            "formula": f"GROUP BY merchant_key → {metric} ORDER BY {metric} DESC",
+            "source_columns": ["merchant_key", "amount", "session_status"],
+            "counting_unit": "row",
+            "filters": filters,
+            "limitations": "All amounts in IRR. Success rate based on session_status IN ('Verified','Paid','Reversed').",
+        },
+    }
+
+
+def get_highest_activity_day(
+    merchant_key: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> dict[str, Any]:
+    """Return the day with the highest activity (Stage 2)."""
+    db = get_db()
+    filt = _full_filter(merchant_key, start_date, end_date)
+    query = f"""
+        SELECT
+            CAST(created_at AS DATE) AS activity_day,
+            COUNT(*) AS attempt_count,
+            COALESCE(SUM(amount), 0) AS total_amount,
+            COUNT(DISTINCT session_key) AS unique_sessions,
+            COUNT(CASE WHEN session_status = 'Verified' THEN 1 END) AS verified_count
+        FROM zp_data
+        {filt}
+        GROUP BY CAST(created_at AS DATE)
+        ORDER BY attempt_count DESC, total_amount DESC
+        LIMIT 1
+    """
+    result = db.sql(query)
+    cols = [d[0] for d in result.description]
+    row = result.fetchall()
+    if row:
+        peak = dict(zip(cols, row[0]))
+    else:
+        peak = {"activity_day": None, "attempt_count": 0, "total_amount": 0,
+                "unique_sessions": 0, "verified_count": 0}
+
+    filters: dict[str, Any] = {}
+    if merchant_key:
+        filters["merchant_key"] = merchant_key
+    if start_date:
+        filters["start_date"] = start_date
+    if end_date:
+        filters["end_date"] = end_date
+
+    return {
+        "peak_day": peak,
+        "traceability": {
+            "metric_id": "highest_activity_day",
+            "definition": "Day with the highest number of payment attempt rows.",
+            "formula": "GROUP BY CAST(created_at AS DATE) → ORDER BY COUNT(*) DESC → LIMIT 1",
+            "source_columns": ["created_at", "session_key", "amount", "session_status"],
+            "counting_unit": "row",
+            "filters": filters,
+            "limitations": "Ties broken by total_amount descending.",
+        },
+    }
+
+
+def get_highest_activity_month(
+    merchant_key: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> dict[str, Any]:
+    """Return the month with the highest activity (Stage 2)."""
+    db = get_db()
+    filt = _full_filter(merchant_key, start_date, end_date)
+    query = f"""
+        SELECT
+            strftime(CAST(created_at AS TIMESTAMP), '%Y-%m') AS activity_month,
+            COUNT(*) AS attempt_count,
+            COALESCE(SUM(amount), 0) AS total_amount,
+            COUNT(DISTINCT session_key) AS unique_sessions
+        FROM zp_data
+        {filt}
+        GROUP BY strftime(CAST(created_at AS TIMESTAMP), '%Y-%m')
+        ORDER BY attempt_count DESC, total_amount DESC
+        LIMIT 1
+    """
+    result = db.sql(query)
+    cols = [d[0] for d in result.description]
+    row = result.fetchall()
+    if row:
+        peak = dict(zip(cols, row[0]))
+    else:
+        peak = {"activity_month": None, "attempt_count": 0, "total_amount": 0,
+                "unique_sessions": 0}
+
+    filters: dict[str, Any] = {}
+    if merchant_key:
+        filters["merchant_key"] = merchant_key
+    if start_date:
+        filters["start_date"] = start_date
+    if end_date:
+        filters["end_date"] = end_date
+
+    return {
+        "peak_month": peak,
+        "traceability": {
+            "metric_id": "highest_activity_month",
+            "definition": "Month with the highest number of payment attempt rows.",
+            "formula": "GROUP BY strftime(created_at, '%Y-%m') → ORDER BY COUNT(*) DESC → LIMIT 1",
+            "source_columns": ["created_at", "session_key", "amount"],
+            "counting_unit": "row",
+            "filters": filters,
+            "limitations": "Ties broken by total_amount descending.",
+        },
+    }
+
+
+def get_sales_share(
+    merchant_key: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    group_by: str = "merchant",
+) -> dict[str, Any]:
+    """Return sales (successful-amount) share by merchant or category (Stage 2).
+
+    Sales definition: SUM(amount) WHERE session_status IN ('Verified', 'Paid', 'Reversed')
+    This is DIFFERENT from Stage 1 total_amount (which sums all rows).
+
+    Counting unit: row (successful payment attempts)
+    """
+    db = get_db()
+    filt = _full_filter(merchant_key, start_date, end_date)
+    group_col = "merchant_key" if group_by == "merchant" else "category_title"
+
+    # Sub-query: successful amount per group
+    share_query = f"""
+        WITH filtered AS (
+            SELECT * FROM zp_data {filt}
+        ),
+        group_sales AS (
+            SELECT
+                {group_col} AS group_key,
+                COUNT(*) AS attempt_count,
+                COALESCE(SUM(amount), 0) AS total_amount,
+                COALESCE(SUM(CASE WHEN session_status IN ({SALES_STATUSES}) THEN amount ELSE 0 END), 0) AS sales_amount,
+                COUNT(CASE WHEN session_status = 'Verified' THEN 1 END) AS verified_count,
+                COUNT(CASE WHEN session_status = 'Failed' THEN 1 END) AS failed_count,
+                ROUND(COALESCE(COUNT(CASE WHEN session_status IN ({SALES_STATUSES}) THEN 1 END), 0) * 100.0 / COUNT(*), 2) AS success_rate
+            FROM filtered
+            GROUP BY {group_col}
+        ),
+        totals AS (
+            SELECT COALESCE(SUM(sales_amount), 0) AS total_sales, COALESCE(SUM(total_amount), 0) AS grand_total
+            FROM group_sales
+        )
+        SELECT
+            gs.group_key,
+            gs.attempt_count,
+            gs.total_amount,
+            gs.sales_amount,
+            ROUND(gs.sales_amount * 100.0 / NULLIF(t.total_sales, 0), 2) AS sales_share_pct,
+            gs.verified_count,
+            gs.failed_count,
+            gs.success_rate,
+            t.total_sales
+        FROM group_sales gs CROSS JOIN totals t
+        ORDER BY gs.sales_amount DESC
+    """
+    result = db.sql(share_query)
+    cols = [d[0] for d in result.description]
+    rows = result.fetchall()
+    shares = [dict(zip(cols, row)) for row in rows]
+
+    # Also compute aggregate-level sales
+    agg_query = f"""
+        SELECT
+            COUNT(*) AS total_attempts,
+            COALESCE(SUM(amount), 0) AS total_amount,
+            COALESCE(SUM(CASE WHEN session_status IN ({SALES_STATUSES}) THEN amount ELSE 0 END), 0) AS total_sales_amount,
+            COUNT(CASE WHEN session_status IN ({SALES_STATUSES}) THEN 1 END) AS total_successful,
+            ROUND(COALESCE(COUNT(CASE WHEN session_status IN ({SALES_STATUSES}) THEN 1 END), 0) * 100.0 / COUNT(*), 2) AS aggregate_success_rate
+        FROM zp_data {filt}
+    """
+    agg_result = db.sql(agg_query)
+    agg_cols = [d[0] for d in agg_result.description]
+    agg_row = agg_result.fetchall()
+    aggregate = dict(zip(agg_cols, agg_row[0])) if agg_row else {}
+
+    filters: dict[str, Any] = {}
+    if merchant_key:
+        filters["merchant_key"] = merchant_key
+    if start_date:
+        filters["start_date"] = start_date
+    if end_date:
+        filters["end_date"] = end_date
+
+    return {
+        "group_by": group_by,
+        f"{group_by}_shares": shares,
+        "aggregate": aggregate,
+        "traceability": {
+            "metric_id": "sales_share",
+            "definition": "Sales share by " + group_by + ". 'Sales' = SUM(amount) WHERE session_status IN ('Verified','Paid','Reversed') — completed payments only.",
+            "formula": f"sales_amount / total_sales * 100, where sales_amount = SUM(CASE WHEN session_status IN ({SALES_STATUSES}) THEN amount ELSE 0 END) GROUP BY {group_col}",
+            "source_columns": ["merchant_key", "amount", "session_status"],
+            "counting_unit": "row",
+            "filters": filters,
+            "limitations": "adjusted_fee is NOT used here. Sales is NOT total amount (Stage 1 total_amount includes failed rows). 'Sales' excludes failed attempts.",
+        },
+    }
+
+
+def get_previous_period_comparison(
+    merchant_key: Optional[str] = None,
+) -> dict[str, Any]:
+    """Compare current period vs previous period metrics (Stage 2).
+
+    Compares the most recent N days vs the N days immediately before.
+    Default N = 30 days.
+    """
+    db = get_db()
+    merchant_filter = _merchant_filter(merchant_key)
+    n = 30
+    query = f"""
+        WITH date_bounds AS (
+            SELECT
+                MAX(CAST(created_at AS DATE)) AS max_date,
+                MAX(CAST(created_at AS DATE)) - INTERVAL '{n} days' AS period_start
+            FROM zp_data WHERE {merchant_filter}
+        ),
+        current_period AS (
+            SELECT
+                COUNT(*) AS current_attempts,
+                COALESCE(SUM(amount), 0) AS current_amount,
+                COALESCE(SUM(CASE WHEN session_status IN ({SALES_STATUSES}) THEN amount ELSE 0 END), 0) AS current_sales,
+                COUNT(CASE WHEN session_status IN ({SALES_STATUSES}) THEN 1 END) AS current_successful
+            FROM zp_data, date_bounds
+            WHERE {merchant_filter}
+                AND CAST(created_at AS DATE) > date_bounds.max_date - INTERVAL '{n} days'
+                AND CAST(created_at AS DATE) <= date_bounds.max_date
+        ),
+        previous_period AS (
+            SELECT
+                COUNT(*) AS prev_attempts,
+                COALESCE(SUM(amount), 0) AS prev_amount,
+                COALESCE(SUM(CASE WHEN session_status IN ({SALES_STATUSES}) THEN amount ELSE 0 END), 0) AS prev_sales,
+                COUNT(CASE WHEN session_status IN ({SALES_STATUSES}) THEN 1 END) AS prev_successful
+            FROM zp_data, date_bounds
+            WHERE {merchant_filter}
+                AND CAST(created_at AS DATE) > date_bounds.max_date - INTERVAL '{n * 2} days'
+                AND CAST(created_at AS DATE) <= date_bounds.max_date - INTERVAL '{n} days'
+        )
+        SELECT
+            cp.current_attempts,
+            cp.current_amount,
+            cp.current_sales,
+            cp.current_successful,
+            pp.prev_attempts,
+            pp.prev_amount,
+            pp.prev_sales,
+            pp.prev_successful,
+            ROUND((cp.current_attempts - pp.prev_attempts) * 100.0 / NULLIF(pp.prev_attempts, 0), 2) AS attempt_change_pct,
+            ROUND((cp.current_amount - pp.prev_amount) * 100.0 / NULLIF(pp.prev_amount, 0), 2) AS amount_change_pct,
+            ROUND((cp.current_sales - pp.prev_sales) * 100.0 / NULLIF(pp.prev_sales, 0), 2) AS sales_change_pct
+        FROM current_period cp CROSS JOIN previous_period pp
+    """
+    result = db.sql(query)
+    cols = [d[0] for d in result.description]
+    rows = result.fetchall()
+    comp = dict(zip(cols, rows[0])) if rows else {}
+
+    filters: dict[str, Any] = {}
+    if merchant_key:
+        filters["merchant_key"] = merchant_key
+
+    return {
+        "period_days": n,
+        "comparison": comp,
+        "traceability": {
+            "metric_id": "previous_period_comparison",
+            "definition": "Compares last 30 days vs the 30 days before that for a merchant (or all).",
+            "formula": "current_period_metrics vs previous_period_metrics, change_pct = (current - previous) / previous * 100",
+            "source_columns": ["created_at", "merchant_key", "amount", "session_status"],
+            "counting_unit": "row",
+            "filters": filters,
+            "limitations": "30-day window relative to the latest date in the dataset. Requires sufficient data depth.",
+        },
+    }
+
+
+# ---------------------------------------------------------------------------
+# Stage 3 — Adjusted-Fee Analysis
+# ---------------------------------------------------------------------------
+
+# ⚠️ CRITICAL BUSINESS RULE — DO NOT REMOVE ⚠️
+# adjusted_fee is a CONFIDENTIALITY-ADJUSTED FEE INDICATOR, NOT the actual
+# ZarinPal fee. It was derived using a constant scaling factor and cannot
+# represent real pricing. It must NEVER be labeled as the actual fee.
+# Relative comparisons within the dataset may remain valid.
+ADJUSTED_FEE_LABEL_EN = "Confidentiality-adjusted fee indicator"
+ADJUSTED_FEE_LABEL_FA = "شاخص کارمزد تعدیلشده برای مقایسه نسبی"
+ADJUSTED_FEE_LIMITATION = (
+    "adjusted_fee is a confidentiality-adjusted indicator, NOT the actual "
+    "ZarinPal fee. Absolute values are not real pricing. Relative comparisons "
+    "within the dataset may remain valid."
+)
+
+
+def get_adjusted_fee_metrics(
+    merchant_key: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> dict[str, Any]:
+    """Return adjusted-fee indicator aggregate metrics (Stage 3).
+
+    The adjusted_fee column is a CONFIDENTIALITY-ADJUSTED FEE INDICATOR,
+    not the actual ZarinPal fee. All outputs are clearly labeled.
+    """
+    db = get_db()
+    filt = _full_filter(merchant_key, start_date, end_date)
+
+    query = f"""
+        SELECT
+            COUNT(*) AS row_count,
+            COALESCE(SUM(adjusted_fee), 0) AS total_adjusted_fee,
+            ROUND(AVG(adjusted_fee), 2) AS avg_adjusted_fee,
+            COALESCE(MIN(adjusted_fee), 0) AS min_adjusted_fee,
+            COALESCE(MAX(adjusted_fee), 0) AS max_adjusted_fee,
+            COALESCE(SUM(amount), 0) AS total_amount,
+            COALESCE(SUM(CASE WHEN session_status IN ({SALES_STATUSES}) THEN amount ELSE 0 END), 0) AS sales_amount,
+            ROUND(COALESCE(SUM(adjusted_fee), 0) * 100.0 / NULLIF(SUM(amount), 0), 4) AS fee_share_of_amount_pct
+        FROM zp_data
+        {filt}
+    """
+    result = db.sql(query)
+    cols = [d[0] for d in result.description]
+    rows = result.fetchall()
+    metrics = dict(zip(cols, rows[0])) if rows else {}
+
+    filters: dict[str, Any] = {}
+    if merchant_key:
+        filters["merchant_key"] = merchant_key
+    if start_date:
+        filters["start_date"] = start_date
+    if end_date:
+        filters["end_date"] = end_date
+
+    return {
+        "label_en": ADJUSTED_FEE_LABEL_EN,
+        "label_fa": ADJUSTED_FEE_LABEL_FA,
+        "metrics": metrics,
+        "traceability": {
+            "metric_id": "adjusted_fee_indicators",
+            "definition": (
+                ADJUSTED_FEE_LABEL_EN + " — sum, average, min, max, "
+                "and share of amount. NOT the actual ZarinPal fee."
+            ),
+            "formula": (
+                f"SUM(adjusted_fee), AVG(adjusted_fee), "
+                f"fee_share_of_amount_pct = SUM(adjusted_fee) / SUM(amount) * 100"
+            ),
+            "source_columns": ["adjusted_fee", "amount", "session_status"],
+            "counting_unit": "row",
+            "filters": filters,
+            "limitations": ADJUSTED_FEE_LIMITATION,
+        },
+    }
+
+
+def get_adjusted_fee_trend(
+    merchant_key: Optional[str] = None,
+    interval: str = "month",
+) -> dict[str, Any]:
+    """Return adjusted-fee indicator trend over time (Stage 3)."""
+    db = get_db()
+    filt = _full_filter(merchant_key)
+
+    if interval == "day":
+        group_expr = "CAST(created_at AS DATE)"
+    elif interval == "month":
+        group_expr = "strftime(CAST(created_at AS TIMESTAMP), '%Y-%m')"
+    elif interval == "year":
+        group_expr = "strftime(CAST(created_at AS TIMESTAMP), '%Y')"
+    else:
+        raise ValueError(f"Unknown interval: {interval}")
+
+    query = f"""
+        SELECT
+            {group_expr} AS time_period,
+            COUNT(*) AS attempts,
+            ROUND(AVG(adjusted_fee), 2) AS avg_adjusted_fee,
+            COALESCE(SUM(adjusted_fee), 0) AS total_adjusted_fee,
+            ROUND(COALESCE(SUM(adjusted_fee), 0) * 100.0 / NULLIF(SUM(amount), 0), 4) AS fee_share_of_amount_pct
+        FROM zp_data
+        {filt}
+        GROUP BY {group_expr}
+        ORDER BY time_period
+    """
+    result = db.sql(query)
+    cols = [d[0] for d in result.description]
+    rows = result.fetchall()
+    trend = [dict(zip(cols, row)) for row in rows]
+    for t in trend:
+        t["time_period"] = str(t["time_period"])
+
+    filters: dict[str, Any] = {}
+    if merchant_key:
+        filters["merchant_key"] = merchant_key
+
+    return {
+        "label_en": ADJUSTED_FEE_LABEL_EN,
+        "label_fa": ADJUSTED_FEE_LABEL_FA,
+        "interval": interval,
+        "trend": trend,
+        "traceability": {
+            "metric_id": "adjusted_fee_trend",
+            "definition": ADJUSTED_FEE_LABEL_EN + " trend over " + interval + ".",
+            "formula": f"GROUP BY {group_expr} → AVG(adjusted_fee), SUM(adjusted_fee), fee_share = SUM(adjusted_fee)/SUM(amount)*100",
+            "source_columns": ["created_at", "adjusted_fee", "amount"],
+            "counting_unit": "row",
+            "filters": filters,
+            "limitations": ADJUSTED_FEE_LIMITATION,
+        },
+    }
+
+
+def get_adjusted_fee_by_merchant(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> dict[str, Any]:
+    """Return adjusted-fee indicator by merchant (Stage 3)."""
+    db = get_db()
+    dates = _date_filter(start_date, end_date)
+
+    query = f"""
+        SELECT
+            merchant_key,
+            COUNT(*) AS row_count,
+            COALESCE(SUM(adjusted_fee), 0) AS total_adjusted_fee,
+            ROUND(AVG(adjusted_fee), 2) AS avg_adjusted_fee,
+            COALESCE(SUM(amount), 0) AS total_amount,
+            ROUND(COALESCE(SUM(adjusted_fee), 0) * 100.0 / NULLIF(SUM(amount), 0), 4) AS fee_share_of_amount_pct
+        FROM zp_data
+        WHERE {dates}
+        GROUP BY merchant_key
+        ORDER BY total_adjusted_fee DESC
+    """
+    result = db.sql(query)
+    cols = [d[0] for d in result.description]
+    rows = result.fetchall()
+    by_merchant = [dict(zip(cols, row)) for row in rows]
+
+    filters: dict[str, Any] = {}
+    if start_date:
+        filters["start_date"] = start_date
+    if end_date:
+        filters["end_date"] = end_date
+
+    return {
+        "label_en": ADJUSTED_FEE_LABEL_EN,
+        "label_fa": ADJUSTED_FEE_LABEL_FA,
+        "by_merchant": by_merchant,
+        "traceability": {
+            "metric_id": "adjusted_fee_by_merchant",
+            "definition": ADJUSTED_FEE_LABEL_EN + " aggregated per merchant.",
+            "formula": "GROUP BY merchant_key → SUM(adjusted_fee), AVG(adjusted_fee), fee_share = SUM(adjusted_fee)/SUM(amount)*100",
+            "source_columns": ["merchant_key", "adjusted_fee", "amount"],
+            "counting_unit": "row",
+            "filters": filters,
+            "limitations": ADJUSTED_FEE_LIMITATION,
+        },
+    }
+
+
+def get_adjusted_fee_by_category(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> dict[str, Any]:
+    """Return adjusted-fee indicator by category (Stage 3)."""
+    db = get_db()
+    dates = _date_filter(start_date, end_date)
+
+    query = f"""
+        SELECT
+            category_title,
+            COUNT(*) AS row_count,
+            COALESCE(SUM(adjusted_fee), 0) AS total_adjusted_fee,
+            ROUND(AVG(adjusted_fee), 2) AS avg_adjusted_fee,
+            COALESCE(SUM(amount), 0) AS total_amount,
+            ROUND(COALESCE(SUM(adjusted_fee), 0) * 100.0 / NULLIF(SUM(amount), 0), 4) AS fee_share_of_amount_pct
+        FROM zp_data
+        WHERE {dates}
+        GROUP BY category_title
+        ORDER BY total_adjusted_fee DESC
+    """
+    result = db.sql(query)
+    cols = [d[0] for d in result.description]
+    rows = result.fetchall()
+    by_category = [dict(zip(cols, row)) for row in rows]
+
+    filters: dict[str, Any] = {}
+    if start_date:
+        filters["start_date"] = start_date
+    if end_date:
+        filters["end_date"] = end_date
+
+    return {
+        "label_en": ADJUSTED_FEE_LABEL_EN,
+        "label_fa": ADJUSTED_FEE_LABEL_FA,
+        "by_category": by_category,
+        "traceability": {
+            "metric_id": "adjusted_fee_by_category",
+            "definition": ADJUSTED_FEE_LABEL_EN + " aggregated per category.",
+            "formula": "GROUP BY category_title → SUM(adjusted_fee), AVG(adjusted_fee), fee_share = SUM(adjusted_fee)/SUM(amount)*100",
+            "source_columns": ["category_title", "adjusted_fee", "amount"],
+            "counting_unit": "row",
+            "filters": filters,
+            "limitations": ADJUSTED_FEE_LIMITATION,
+        },
+    }

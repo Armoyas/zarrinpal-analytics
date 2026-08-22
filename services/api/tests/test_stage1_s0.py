@@ -24,7 +24,7 @@ def sample_csv(tmp_path_factory):
          "try_created_at", "verified_at", "settled_at", "expire_in"],
         ["s1", "0", "T1", "M1", "1", "آموزش", "1000000", "2400", "Verified", "Verified",
          "", "", "", "", "Automated", "100", "50", "2024-01-01 10:00:00",
-         "", "", "", "2024-01-01 10:05:00"],
+         "", "", "2024-01-01 10:03:00", "2024-01-01 10:05:00"],
         ["s2", "0", "T1", "M1", "1", "آموزش", "5000000", "1200", "Failed", "Failed",
          "", "", "", "", "Automated", "200", "", "2024-01-01 11:00:00",
          "", "", "", "2024-01-01 11:05:00"],
@@ -37,6 +37,9 @@ def sample_csv(tmp_path_factory):
         ["s5", "0", "T2", "M2", "2", "خرده\u200cفروشی آنلاین", "200000", "1200", "Failed", "Failed",
          "", "", "", "", "Automated", "300", "", "2024-01-02 11:00:00",
          "", "", "", "2024-01-02 11:05:00"],
+        ["s6", "0", "T1", "M1", "1", "آموزش", "1500000", "3600", "Verified", "Verified",
+         "", "200", "50", "card2", "Manual", "120", "60", "2024-01-02 09:00:00",
+         "", "2024-01-02 09:05:00", "2024-01-02 09:10:00", "2024-01-02 09:15:00"],
     ]
     csv_path = tmp_path_factory.mktemp("data") / "sample_data.csv"
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
@@ -60,7 +63,7 @@ def app(sample_csv):
     db = get_db()
     # Reload table
     db.sql("DROP TABLE IF EXISTS zp_data")
-    db.sql(f"CREATE TABLE zp_data AS SELECT * FROM read_csv('{sample_csv}', header=true, sep=',')")
+    db.sql(f"CREATE TABLE zp_data AS SELECT * FROM read_csv_auto('{sample_csv}', header=true, sep=',', strict_mode=false)")
 
     yield app
     close_db()
@@ -83,7 +86,7 @@ class TestHealthEndpoint:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "healthy"
-        assert data["stage"] == "1-core-overview"
+        assert data["stage"] == "3-adjusted-fee"
         assert data["data_available"] is True
 
 
@@ -95,7 +98,7 @@ class TestSchemaEndpoint:
         assert "columns" in data
         assert "row_count" in data
         assert data["columns_count"] == 22
-        assert data["row_count"] == 5
+        assert data["row_count"] == 6
 
     def test_schema_has_expected_columns(self, client):
         response = client.get("/api/v1/schema")
@@ -173,10 +176,10 @@ class TestOverviewEndpoint:
         total_metric = next(m for m in data["metrics"] if m["metric_id"] == "total_amount")
         avg_metric = next(m for m in data["metrics"] if m["metric_id"] == "avg_amount")
 
-        # M1 has amounts: 1000000 + 5000000 + 3000000 = 9000000
-        assert total_metric["value"] == 9000000
-        # Avg = 9000000 / 3 = 3000000
-        assert avg_metric["value"] == 3000000.0
+        # M1 has amounts: 1000000 + 5000000 + 3000000 + 1500000 = 10500000
+        assert total_metric["value"] == 10500000
+        # Avg = 10500000 / 4 = 2625000
+        assert avg_metric["value"] == 2625000.0
 
     def test_overview_row_count(self, client):
         """Test payment-attempt row count."""
@@ -185,7 +188,7 @@ class TestOverviewEndpoint:
         row_count_metric = next(
             m for m in data["metrics"] if m["metric_id"] == "payment_attempts"
         )
-        assert row_count_metric["value"] == 3
+        assert row_count_metric["value"] == 4  # s1, s2, s3, s6
         assert row_count_metric["counting_unit"] == "row"
 
     def test_overview_unique_session_count(self, client):
@@ -195,7 +198,7 @@ class TestOverviewEndpoint:
         session_metric = next(
             m for m in data["metrics"] if m["metric_id"] == "unique_sessions"
         )
-        assert session_metric["value"] == 3  # s1, s2, s3
+        assert session_metric["value"] == 4  # s1, s2, s3, s6
         assert session_metric["counting_unit"] == "session"
 
     def test_overview_status_logic(self, client):
@@ -206,10 +209,10 @@ class TestOverviewEndpoint:
         failed = next(m for m in data["metrics"] if m["metric_id"] == "failed_count")
         settled = next(m for m in data["metrics"] if m["metric_id"] == "settled_count")
 
-        # M1: Verified=2 (s1, s3), Failed=1 (s2), Settled=1 (s3 has settled_at)
-        assert verified["value"] == 2
+        # M1: Verified=3 (s1, s3, s6), Failed=1 (s2), Settled=2 (s1 and s6 have settled_at)
+        assert verified["value"] == 3
         assert failed["value"] == 1
-        assert settled["value"] == 1
+        assert settled["value"] == 2
 
     def test_overview_success_rate(self, client):
         """Test success rate calculation."""
@@ -218,8 +221,8 @@ class TestOverviewEndpoint:
         success_rate = next(
             m for m in data["metrics"] if m["metric_id"] == "success_rate"
         )
-        # 2 verified / 3 total * 100 = 66.67
-        assert success_rate["value"] == 66.67
+        # 3 verified / 4 total * 100 = 75.0
+        assert success_rate["value"] == 75.0
 
     def test_overview_traceability(self, client):
         """Test that all metrics have traceability metadata."""
@@ -258,8 +261,8 @@ class TestTrendsEndpoint:
         data = response.json()
         assert "daily" in data
         assert len(data["daily"]) == 2  # 2024-01-01 and 2024-01-02... wait, check data
-        # M1 has data on 2024-01-01 (s1, s2, s3) only
-        assert len(data["daily"]) == 1
+        # M1 has data on 2024-01-01 (s1, s2, s3) and 2024-01-02 (s6)
+        assert len(data["daily"]) == 2
 
     def test_trends_daily_fields(self, client):
         response = client.get("/api/v1/trends?merchant_key=M1")
@@ -303,4 +306,4 @@ class TestNoData:
         row_count = next(
             m for m in data["metrics"] if m["metric_id"] == "payment_attempts"
         )
-        assert row_count["value"] == 5
+        assert row_count["value"] == 6

@@ -1,11 +1,10 @@
 """
 Pydantic models for ZarinPal Analytical Dashboard API.
-Stage 1: Core Merchant Overview — all responses include traceability metadata.
+All responses include traceability metadata.
 """
 
 from __future__ import annotations
 
-from datetime import date
 from typing import Any, Optional
 
 from pydantic import BaseModel, Field
