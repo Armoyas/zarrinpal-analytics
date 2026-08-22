@@ -56,11 +56,7 @@ export function PredictionChart() {
             border: "1px solid hsl(220 30% 20%)",
             borderRadius: "8px",
           }}
-<<<<<<< HEAD
           formatter={(value) => [value.toLocaleString("fa"), "تراکنش‌ها"]}
-=======
-          formatter={(value: any) => [value.toLocaleString("fa"), "تراکنش‌ها"]}
->>>>>>> b02ecabe7ff1feb08af1199006c2ee9cdf441a41
           labelFormatter={(label) => `تاریخ: ${label}`}
         />
         <Area
