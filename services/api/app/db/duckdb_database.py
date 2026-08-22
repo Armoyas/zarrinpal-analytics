@@ -657,7 +657,9 @@ class DuckDBManager:
             variance = sum((d['transactions'] - avg_tx) ** 2 for d in daily) / len(daily)
             std_tx = variance ** 0.5
 
-            last_date = datetime.strptime(daily[-1]['date'], '%Y-%m-%d')
+            last_date = daily[-1]['date']
+            if isinstance(last_date, str):
+                last_date = datetime.strptime(last_date, '%Y-%m-%d')
             forecast = []
             for i in range(1, days + 1):
                 forecast_date = last_date + timedelta(days=i)
@@ -853,7 +855,6 @@ class DuckDBManager:
 
             # Holiday prediction model
             if daily_patterns:
-                recent = daily_patterns[:14]
                 avg_daily = sum(d['tx_count'] for d in daily_patterns) / len(daily_patterns)
                 holiday_bump = 1.35  # Nowruz typically sees 35% transaction increase
                 predicted_tx = int(avg_daily * 14 * holiday_bump)
