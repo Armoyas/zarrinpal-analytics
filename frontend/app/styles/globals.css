@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222.2 84% 4.9%;
+    --foreground: 0 0% 98%;
+    --card: 222.2 84% 10%;
+    --card-foreground: 0 0% 98%;
+    --border: 214.3 31.8% 91.3%;
+    --primary: 222.2 84% 65%;
+    --muted: 222.2 84% 15%;
+    --muted-foreground: 0 0% 70%;
+    --accent: 222.2 84% 20%;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Vazirmatn", system-ui, sans-serif;
+  }
+}

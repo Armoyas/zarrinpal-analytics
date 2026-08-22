@@ -1,4 +1,5 @@
 name: analytical-dashboard
+
 services:
   api:
     build:
@@ -16,14 +17,14 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: node:20-alpine
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
     container_name: zp-frontend
-    working_dir: /app
-    volumes:
-      - ./frontend:/app
     ports:
       - "3000:3000"
-    command: sh -c "npm install && npx serve -s ."
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
     depends_on:
       - api
     restart: unless-stopped

@@ -8,7 +8,7 @@ Build a modern Persian RTL analytical dashboard for ZarinPal merchants that anal
 
 1. **Never invent dataset columns.** Every column used in analytics must be present in the actual CSV schema. No synthetic or derived columns beyond those explicitly documented.
 
-2. **Document every metric formula.** Every metric, KPI, or computed value must have a documented formula in `docs/data-dictionary.md` with a reference to the source columns.
+2. **Document every metric formula.** Every metric, KPI, or computed value must have a documented formula in `docs/metric-definitions.md` with a reference to the source columns.
 
 3. **Distinguish row, attempt, session, verified payment, and settled payment.** These are NOT interchangeable:
    - **Row:** A single record in the CSV.
@@ -23,12 +23,13 @@ Build a modern Persian RTL analytical dashboard for ZarinPal merchants that anal
    - Real-time fraud detection beyond stated data.
    - Cross-platform user behavior (no user identity beyond `payer_card_key`).
    - Fee-based revenue projections using `adjusted_fee`.
+   - Customer segmentation, product analytics, inventory, or retention features (not supported by dataset columns).
 
 6. **Never commit the full dataset.** The complete CSV must never be committed to Git. Only sample subsets (max 100 rows) may be committed for documentation. Use `.gitignore` to exclude full data files.
 
 7. **Use deterministic backend calculations as the source of truth.** All metrics must be computed in the backend (DuckDB queries) — never in the frontend. Frontend consumes only API responses.
 
-8. **Support Persian RTL and mobile layouts.** All frontend pages must default to `dir="rtl"` with Vazirmatn font. Mobile responsiveness is mandatory.
+8. **Support Persian RTL and mobile layouts.** All frontend pages must default to `dir="rtl"` with Vazirmatn font. Mobile responsiveness is mandatory (Tailwind responsive classes).
 
 9. **Update specifications and documentation after every stage.** Each completed stage must update `specs/`, `docs/`, and `PROJECT_STRUCTURE.md`.
 
@@ -45,4 +46,16 @@ Build a modern Persian RTL analytical dashboard for ZarinPal merchants that anal
 
 **Stage 0 (Foundation):** Project scaffolding, dataset inspection, data validation scripts, Docker Compose foundation, minimal health endpoint, minimal frontend startup page. No dashboard analytics yet.
 
-**Future stages:** Backend API endpoints, analytics engine, dashboard UI components, AI-powered insights.
+**Stage 1 (Core Merchant Overview):** Backend FastAPI endpoints (health, schema, merchants, overview, trends) with DuckDB analytics queries. Next.js 14 frontend with Tailwind CSS v3, shadcn/ui components, and Vazirmatn font. Persian RTL dashboard with merchant selector, date-range filter, KPI cards, daily activity chart, amount trend chart, and calculation-details traceability dialog. Backend tests with pytest, frontend lint, typecheck, and build.
+
+**Stage 1 Out of Scope:** Advanced analytics, merchant performance comparisons, AI-powered insights, Nowruz analysis, real-time fraud detection.
+
+**Future stages:** Advanced analytics, merchant performance, sales share, high-value payments, AI-powered insights.
+
+## SDLC / SDD Workflow
+
+1. Read `specs/constitution.md` before any work.
+2. Read the Stage 0 spec in `specs/000-foundation/` for context.
+3. Read the relevant stage spec in `specs/` (e.g. `specs/001-core-overview/spec.md`).
+4. Follow tasks in `specs/<stage>/tasks.md`.
+5. Update specs and docs after each stage.
