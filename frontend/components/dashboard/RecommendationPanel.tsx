@@ -1,3 +1,5 @@
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Lightbulb, Shield, TrendingUp, Users, AlertCircle, Target } from "lucide-react"
@@ -20,7 +22,8 @@ const recommendationColors: Record<string, string> = {
   default: "border-yellow-500/30 bg-yellow-500/10 text-yellow-300",
 }
 
-export function RecommendationPanel({ data }: { data: any }) {
+export function RecommendationPanel({ data }: { data?: any }) {
+  if (!data) return null
   return (
     <Card className="bg-card/50 border-border/50">
       <CardHeader>

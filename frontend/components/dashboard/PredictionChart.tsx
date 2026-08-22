@@ -1,3 +1,5 @@
+"use client"
+
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -57,9 +59,8 @@ export function PredictionChart() {
             border: "1px solid hsl(220 30% 20%)",
             borderRadius: "8px",
           }}
-          formatter={(value: number) => [value.toLocaleString("fa"), "تراکنش‌ها"]}
-            labelFormatter={(label) => `تاریخ: ${label}`}
-          )}
+          formatter={(value) => [value.toLocaleString("fa"), "تراکنش‌ها"]}
+          labelFormatter={(label) => `تاریخ: ${label}`}
         />
         <Area
           type="monotone"

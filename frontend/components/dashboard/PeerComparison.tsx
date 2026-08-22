@@ -1,10 +1,13 @@
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { BarChart3, TrendingUp, TrendingDown } from "lucide-react"
 
-export function PeerComparison({ data }: { data: any }) {
-  const currentUser = data.current_user
+export function PeerComparison({ data }: { data?: any }) {
+  if (!data) return null
   const percentile = data.percentile
+  const currentUser = data.current_user
 
   return (
     <Card className="bg-card/50 border-border/50">

@@ -1,3 +1,5 @@
+"use client"
+
 import { useQuery } from "@tanstack/react-query"
 import { api, SpendingPattern } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"

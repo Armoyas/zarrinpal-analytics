@@ -1,3 +1,5 @@
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { ArrowUpRight, TrendingUp, DollarSign, ShoppingCart } from "lucide-react"
@@ -32,7 +34,8 @@ function MetricCard({ title, value, change, icon, trend }: MetricCardProps) {
   )
 }
 
-export function PerformanceMetrics({ data }: { data: any }) {
+export function PerformanceMetrics({ data }: { data?: any }) {
+  if (!data) return null
   const formatCurrency = (amount: number) => {
     const num = amount / 100000 // Convert from Rial to Toman
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M تومان`

@@ -1,9 +1,12 @@
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { Medal, Trophy, Star } from "lucide-react"
 
-export function MerchantRanking({ data }: { data: any }) {
+export function MerchantRanking({ data }: { data?: any }) {
+  if (!data) return null
   const formatAmount = (amount: number) => {
     const toman = amount / 100000
     if (toman >= 1000000) return `${(toman / 1000000).toFixed(1)}M`

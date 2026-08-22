@@ -4,7 +4,9 @@ import { cn } from "@/lib/utils"
 
 const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ToastPrimitive.Root>
+  React.ComponentPropsWithoutRef<typeof ToastPrimitive.Root> & {
+    variant?: "default" | "destructive"
+  }
 >(({ className, variant, ...props }, ref) => {
   return (
     <ToastPrimitive.Root

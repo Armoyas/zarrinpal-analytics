@@ -1,8 +1,11 @@
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { TrendingUp } from "lucide-react"
 
-export function TransactionTrends({ data }: { data: any }) {
+export function TransactionTrends({ data }: { data?: any }) {
+  if (!data) return null
   const chartData = data.map((item: any) => ({
     date: new Date(item.date).toLocaleDateString("fa-IR"),
     transactions: item.count,
@@ -31,8 +34,8 @@ export function TransactionTrends({ data }: { data: any }) {
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-              <YAxis yAxisSetName="amount" stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={formatYAxis} />
-              <YAxis yAxisSetName="transactions" orientation="right" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+              <YAxis yAxisId="amount" stroke="hsl(var(--muted-foreground))" fontSize={12} tickFormatter={formatYAxis} />
+              <YAxis yAxisId="transactions" orientation="right" stroke="hsl(var(--muted-foreground))" fontSize={12} />
               <Tooltip
                 contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
                 labelStyle={{ color: "hsl(var(--foreground))" }}
