@@ -42,11 +42,12 @@ async def smart_recommendations(limit: int = 10):
     recommendations = []
     for m in merchants:
         profile = db.get_merchant_performance(m["merchant_key"])
+        success_rate = m.get("success_rate_pct", 0)
         recommendations.append({
             "merchant_key": m["merchant_key"],
             "category_title": m.get("category_title", ""),
-            "success_rate": m.get("success_rate", 0),
+            "success_rate": success_rate,
             "recommendations": profile.get("recommendations", ["No recommendations available"]),
-            "performance_tier": "high" if m.get("success_rate", 0) > 85 else ("medium" if m.get("success_rate", 0) > 70 else "low"),
+            "performance_tier": "high" if success_rate > 85 else ("medium" if success_rate > 70 else "low"),
         })
     return recommendations
