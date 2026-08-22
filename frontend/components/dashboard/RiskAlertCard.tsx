@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { api, RiskAlert } from "@/lib/api"
+import { api } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -53,7 +53,6 @@ export function RiskAlertCard() {
   }
 
   const sortedAlerts = [...alerts].sort((a, b) => b.risk_score - a.risk_score)
-  const topAlert = sortedAlerts[0]
 
   return (
     <div className="space-y-3">

@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -50,16 +49,18 @@ export function PredictionChart() {
           axisLine={false}
           tickLine={false}
         />
-        <YAxis
-          hide
-        />
+        <YAxis hide />
         <Tooltip
           contentStyle={{
             backgroundColor: "hsl(220 20% 12%)",
             border: "1px solid hsl(220 30% 20%)",
             borderRadius: "8px",
           }}
+<<<<<<< HEAD
           formatter={(value) => [value.toLocaleString("fa"), "تراکنش‌ها"]}
+=======
+          formatter={(value: any) => [value.toLocaleString("fa"), "تراکنش‌ها"]}
+>>>>>>> b02ecabe7ff1feb08af1199006c2ee9cdf441a41
           labelFormatter={(label) => `تاریخ: ${label}`}
         />
         <Area

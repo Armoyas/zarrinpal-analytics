@@ -39,7 +39,6 @@ export function useToast() {
   }, [])
 
   const toast = (props: Omit<ToastProps, "id">) => toastState.addToast(props)
-  toast.dismiss = (id?: string) => toastState.dismiss(id)
 
   return {
     toasts,
