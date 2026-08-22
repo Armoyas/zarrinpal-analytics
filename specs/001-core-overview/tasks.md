@@ -1,63 +1,98 @@
 # Stage 1 Task Checklist — Core Merchant Overview
 
-## Planning & Specification
-- [x] Update `specs/constitution.md` — add Stage 1 scope
+**Stage:** 1  
+**Status:** Complete  
+**Last Updated:** 2026-08-22
+
+## Tasks
+
+### Backend
+
+- [x] Create `services/api/app/database.py` — DuckDB connection and query layer
+- [x] Create `services/api/app/models.py` — Pydantic models with traceability
+- [x] Create `services/api/app/__init__.py` — package init
+- [x] Update `services/api/app/main.py` — FastAPI app with 5 endpoints
+  - [x] GET `/api/v1/health`
+  - [x] GET `/api/v1/schema`
+  - [x] GET `/api/v1/merchants`
+  - [x] GET `/api/v1/overview`
+  - [x] GET `/api/v1/trends`
+- [x] Update `services/api/requirements.txt` — add fastapi, uvicorn, duckdb, pydantic
+- [x] Update `services/api/Dockerfile` — backend container
+
+### Frontend
+
+- [x] Upgrade frontend to Next.js 14 with App Router
+- [x] Set up Tailwind CSS v3 with dark theme
+- [x] Configure Vazirmatn font (Persian + Latin subsets)
+- [x] Set `dir="rtl"` and `lang="fa"` on HTML element
+- [x] Create `frontend/app/page.tsx` — main dashboard page
+- [x] Create `frontend/app/layout.tsx` — RTL layout with Vazirmatn
+- [x] Create `frontend/app/styles/globals.css` — Tailwind base styles
+- [x] Create `frontend/lib/api.ts` — API client with TypeScript types
+- [x] Create `frontend/lib/types.ts` — shared types (or `app/types.ts`)
+- [x] Create component: `KpiCard` — clickable KPI display
+- [x] Create component: `MerchantSelector` — merchant dropdown
+- [x] Create component: `DateRangeFilter` — date range inputs
+- [x] Create component: `DailyTrendChart` — bar chart (recharts)
+- [x] Create component: `AmountTrendChart` — line chart (recharts)
+- [x] Create component: `DataLimitationWarning` — warning banner
+- [x] Create component: `CalculationDetails` — traceability drawer
+- [x] Create `frontend/tsconfig.json` — TypeScript config (ES2020 for MapIterator)
+- [x] Create `frontend/tailwind.config.js` — Tailwind config
+- [x] Create `frontend/package.json` — dependencies and scripts
+- [x] Create `frontend/Dockerfile` — multi-stage build
+- [x] Create `frontend/.eslintrc.json` — ESLint config
+- [x] Create `frontend/eslint.config.mjs` — ESLint flat config
+
+### Tests
+
+- [x] Create `services/api/tests/conftest.py` — pytest fixtures
+- [x] Create `services/api/tests/test_stage1_s0.py` — 27 backend tests
+  - [x] Health endpoint test
+  - [x] Schema endpoint test (22 columns, row count)
+  - [x] Merchants endpoint test (list, traceability, category filter, empty)
+  - [x] Overview endpoint tests:
+    - [x] Merchant filtering
+    - [x] Date filtering
+    - [x] Amount aggregation (total, average)
+    - [x] Row count
+    - [x] Unique session count
+    - [x] Status logic (verified, settled, failed)
+    - [x] Success rate
+    - [x] Traceability metadata
+    - [x] Empty results (non-existent merchant)
+    - [x] Division by zero (success_rate = 0.0)
+    - [x] Invalid date range (400 response)
+  - [x] Trends endpoint tests:
+    - [x] Daily data returned
+    - [x] Daily fields validated
+    - [x] Amount aggregation
+    - [x] Invalid date range (400)
+    - [x] Traceability
+
+### Validation
+
+- [x] Run pytest — all tests pass
+- [x] Run frontend lint — passes
+- [x] Run frontend typecheck — passes
+- [x] Run frontend build — succeeds
+- [x] Run `docker compose config` — validates
+
+### Documentation
+
+- [x] Update `specs/constitution.md` — mark Stage 1 in scope
 - [x] Create `specs/001-core-overview/spec.md`
 - [x] Create `specs/001-core-overview/plan.md`
 - [x] Create `specs/001-core-overview/tasks.md`
+- [x] Create `docs/metric-definitions.md` — all metric formulas
+- [x] Create `docs/api-reference.md` — API endpoint documentation
+- [x] Update `docs/data-dictionary.md` — ensure Stage 1 columns documented
+- [x] Update `docs/PROJECT_HANDOFF.md` — Stage 1 handoff
+- [x] Update `AGENTS.md` — Stage 1 development guidelines
+- [x] Update `README.md` — Stage 1 features
+- [x] Update `PROJECT_STRUCTURE.md` — Stage 1 file tree
 
-## Backend
-- [x] Create `services/api/app/models.py` — Pydantic models with traceability
-- [x] Create `services/api/app/database.py` — DuckDB connection + query helpers
-- [x] Rewrite `services/api/app/main.py` — all 5 endpoints
-- [x] Update `services/api/requirements.txt`
-- [x] Update `services/api/Dockerfile`
+### Commit
 
-## Frontend
-- [x] Set up Next.js 14 project structure (package.json, tsconfig, next.config)
-- [x] Install and configure Tailwind CSS v3
-- [x] Install shadcn/ui components (Card, Select, Button, Dialog, etc.)
-- [x] Configure Vazirmatn font and RTL support
-- [x] Create `frontend/src/App.tsx` — main dashboard page
-- [x] Create `frontend/src/components/MerchantSelector.tsx`
-- [x] Create `frontend/src/components/DateRangeFilter.tsx`
-- [x] Create `frontend/src/components/KpiCard.tsx`
-- [x] Create `frontend/src/components/DailyTrendChart.tsx`
-- [x] Create `frontend/src/components/AmountTrendChart.tsx`
-- [x] Create `frontend/src/components/CalculationDetails.tsx`
-- [x] Add data limitation warning
-- [x] Add loading, empty, error states
-
-## Tests
-- [x] Create `tests/backend/test_api.py`
-- [x] Backend tests: merchant filtering
-- [x] Backend tests: date filtering
-- [x] Backend tests: amount aggregation
-- [x] Backend tests: row counts
-- [x] Backend tests: unique session counts
-- [x] Backend tests: status logic
-- [x] Backend tests: empty results
-- [x] Backend tests: invalid date range
-- [x] Backend tests: division by zero
-- [x] Backend tests: traceability metadata
-
-## Validation
-- [x] Run `pytest tests/ -v` — all tests pass
-- [x] Run `cd frontend && npm run lint` — passes
-- [x] Run `cd frontend && npm run typecheck` — passes
-- [x] Run `cd frontend && npm run build` — passes
-- [x] Run `docker compose config` — valid
-
-## Documentation
-- [x] Create `docs/metric-definitions.md`
-- [x] Create `docs/api-reference.md`
-- [x] Update `docs/PROJECT_HANDOFF.md`
-- [x] Update `docs/data-dictionary.md`
-- [x] Update `AGENTS.md`
-- [x] Update `README.md`
-- [x] Update `PROJECT_STRUCTURE.md`
-
-## Git
-- [x] Stage all files
-- [x] Commit: `feat: add core merchant overview analytics`
-- [x] Push to origin
+- [x] Commit: "feat: add core merchant overview analytics"

@@ -1,80 +1,83 @@
-# Implementation Plan — Stage 1 Core Merchant Overview
+# Stage 1 Implementation Plan — Core Merchant Overview
 
-## Timeline
+**Stage:** 1  
+**Status:** Complete  
+**Last Updated:** 2026-08-22
 
-| Phase | Duration | Description |
-|-------|----------|-------------|
-| Step 1 | 2h | Update constitution + create Stage 1 specs |
-| Step 2 | 3h | Backend: models, database layer, endpoints |
-| Step 3 | 4h | Frontend: Next.js setup, Tailwind, shadcn/ui |
-| Step 4 | 3h | Frontend: dashboard components + charts |
-| Step 5 | 2h | Backend tests + frontend tests |
-| Step 6 | 2h | Run all validations |
-| Step 7 | 1h | Update all documentation |
-| Step 8 | 0.5h | Git commit |
+## Implementation Approach
 
-## Steps
+### Backend (FastAPI + DuckDB)
 
-### 1. Project Planning
-- Update `specs/constitution.md` — add Stage 1 scope line
-- Create `specs/001-core-overview/spec.md` (this stage's spec)
-- Create `specs/001-core-overview/plan.md` (this file)
-- Create `specs/001-core-overview/tasks.md` (task checklist)
+1. **database.py** — DuckDB connection management and deterministic query
+   functions:
+   - `get_schema()` — column names, types, null counts, roles
+   - `get_row_count()` — total row count
+   - `get_merchants(category_id)` — merchant list with aggregate stats
+   - `get_overview_metrics(merchant, start, end)` — all 8 metrics with
+     traceability
+   - `get_daily_trends(merchant, start, end)` — daily aggregation
 
-### 2. Backend Implementation
-- Create `services/api/app/models.py` — Pydantic response models with MetricTraceability
-- Create `services/api/app/database.py` — DuckDB connection manager with typed query helpers
-- Rewrite `services/api/app/main.py` — all 5 endpoints using DuckDB
-- Update `services/api/requirements.txt` — add pydantic
-- Update `services/api/Dockerfile` if needed
+2. **models.py** — Pydantic models with `MetricTrace` and `Traceability`
+   providing traceability metadata on every response.
 
-### 3. Frontend Setup
-- Migrate `frontend/` from static HTML to Next.js 14 + TypeScript
-- Install Tailwind CSS v3, shadcn/ui components
-- Configure Vazirmatn font (Persian, RTL)
-- Set up tsconfig.json, next.config.js, package.json
+3. **main.py** — FastAPI app with 5 endpoints: health, schema, merchants,
+   overview, trends. Date-range validation with 400 on invalid range.
+   Division-by-zero protection for success_rate.
 
-### 4. Frontend Dashboard
-- Merchant selector dropdown (loads from /api/v1/merchants)
-- Date-range filter (start + end date pickers)
-- KPI cards (5 cards: attempts, sessions, verified, failed, success rate)
-- Daily activity chart (attempts + sessions per day)
-- Amount trend chart (daily total amount)
-- Calculation-details drawer (metric traceability metadata)
-- Data limitation warning banner
-- Loading / empty / error states
+### Frontend (Next.js 14 + Tailwind CSS v3)
 
-### 5. Tests
-- `tests/backend/test_api.py` — pytest with 10+ test cases:
-  - Merchant filtering logic
-  - Date filtering logic
-  - Amount aggregation (SUM, AVG)
-  - Row count (COUNT)
-  - Unique session count (COUNT DISTINCT)
-  - Status logic (Verified, Failed counts)
-  - Empty results (merchant with no data in date range)
-  - Invalid date range (start > end)
-  - Division by zero (success rate when 0 attempts)
-  - Traceability metadata presence
-- Frontend tests via Jest + React Testing Library (if feasible in scope)
+1. Upgrade from minimal HTML page to Next.js 14 App Router
+2. Tailwind CSS v3 with dark theme (slate-900 base)
+3. Vazirmatn font via `next/font/google` with `latin` + `arabic` subsets
+4. `dir="rtl"` and `lang="fa"` on `<html>` element
+5. Responsive grid layout (mobile-first with `md:` and `lg:` breakpoints)
+6. Components:
+   - `KpiCard` — clickable KPI card with metric ID
+   - `MerchantSelector` — dropdown with search
+   - `DateRangeFilter` — start/end date inputs
+   - `DailyTrendChart` — recharts BarChart
+   - `AmountTrendChart` — recharts LineChart
+   - `DataLimitationWarning` — amber warning banner
+   - `CalculationDetails` — traceability drawer/modal
+7. API client in `lib/api.ts` with proper TypeScript types
+8. Loading, empty, and error states
 
-### 6. Validation
-- `pytest tests/ -v`
-- `cd frontend && npm run lint`
-- `cd frontend && npm run typecheck`
-- `cd frontend && npm run build`
-- `docker compose config`
+### Testing
 
-### 7. Documentation
-- `docs/metric-definitions.md` — all implemented metrics with formulas and limitations
-- `docs/api-reference.md` — API endpoint documentation
-- Update `docs/PROJECT_HANDOFF.md` — Stage 1 handoff summary
-- Update `docs/data-dictionary.md` — add any Stage 0→1 notes
-- Update `AGENTS.md` — add Stage 1 commands
-- Update `README.md` — update stage status and quick-start
-- Update `PROJECT_STRUCTURE.md` — add new files
+1. Backend pytest tests covering:
+   - Health endpoint
+   - Schema endpoint (22 columns)
+   - Merchants filtering (by merchant, by category, empty results)
+   - Overview metrics (amount aggregation, row counts, session counts,
+     status logic, division by zero, traceability, date filtering, invalid
+     date range)
+   - Trends endpoint (daily data, fields, traceability)
 
-### 8. Git Commit
-- Commit message: `feat: add core merchant overview analytics`
-- Verify all files are tracked
-- Push to origin main
+2. Frontend validation:
+   - ESLint (next/core-web-vitals)
+   - TypeScript typecheck (`tsc --noEmit`)
+   - Production build (`next build`)
+
+3. Docker Compose config validation
+
+## Key Design Decisions
+
+- DuckDB `read_csv_auto` used for CSV loading (handles Persian text and types
+  automatically)
+- `:memory:` DuckDB for testing (no external state)
+- All metrics computed in backend DuckDB queries — frontend never computes
+- Traceability metadata included in every metric response
+- 400-character date-range validation to prevent invalid queries
+- `success_rate = 0.0` when `row_count = 0` (division-by-zero protection)
+
+## Architecture
+
+```
+data/sample_data.csv
+  ↓ (read_csv)
+DuckDB in-memory / file-based
+  ↓ (queries)
+FastAPI (backend API)
+  ↓ (JSON)
+Next.js 14 (Persian RTL frontend)
+```

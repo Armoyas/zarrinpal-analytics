@@ -1,49 +1,87 @@
-# Project Structure
+# PROJECT_STRUCTURE.md
+
+**Last Updated:** 2026-08-22  
+**Current Stage:** Stage 1 — Core Merchant Overview (Complete)
 
 ```
 analytical-dashboard/
-├── .env.example              # Environment variable template
-├── .gitignore                # Safe Git rules (prevents full dataset commit)
-├── AGENTS.md                 # AI coding agent reference
-├── README.md                 # Project overview and quick start
-├── PROJECT_STRUCTURE.md      # This file
-├── docker-compose.yml        # Docker Compose foundation
+├── .env.example                          # Environment variable template
+├── .gitignore                            # Excludes full dataset, allows sample
+├── AGENTS.md                             # AI coding agent reference guide
+├── README.md                             # Project overview
+├── PROJECT_STRUCTURE.md                  # This file
+├── docker-compose.yml                    # Docker Compose (api + frontend)
 ├── data/
-│   ├── README.md             # Data directory documentation
-│   ├── sample_data.csv       # Sample subset (max 100 rows, if available)
-│   └── sample_10_rows.csv    # Small sample for testing
+│   ├── README.md                         # Data directory docs
+│   ├── sample_data.csv                   # Full sample dataset (NOT committed)
+│   └── sample_10_rows.csv                # Small sample for docs (committed)
 ├── docs/
-│   ├── data-dictionary.md    # Column-level documentation
-│   ├── data-quality-report.md # Data quality findings
-│   └── PROJECT_HANDOFF.md    # Stage 0 handoff summary
-├── frontend/
-│   └── src/
-│       ├── App.tsx           # Minimal RTL startup page (Persian)
-│       └── index.css         # Base styles
+│   ├── PROJECT_HANDOFF.md                # Stage handoff summary
+│   ├── api-reference.md                  # API endpoint documentation
+│   ├── data-dictionary.md                # Column-level documentation
+│   ├── data-quality-report.md            # Data quality findings
+│   └── schema-summary.json               # Machine-readable schema (NOT committed)
+├── frontend/                             # Next.js 14 frontend
+│   ├── Dockerfile                        # Multi-stage Docker build
+│   ├── package.json                      # Dependencies and scripts
+│   ├── tsconfig.json                     # TypeScript config (ES2020)
+│   ├── tailwind.config.js                # Tailwind CSS v3 config
+│   ├── postcss.config.js                 # PostCSS config
+│   ├── next.config.js                    # Next.js config
+│   ├── .eslintrc.json                    # ESLint config
+│   ├── app/
+│   │   ├── layout.tsx                    # RTL layout with Vazirmatn font
+│   │   ├── page.tsx                      # Dashboard page
+│   │   ├── styles/
+│   │   │   └── globals.css               # Tailwind base styles
+│   │   ├── components/
+│   │   │   ├── AmountTrendChart.tsx      # Daily amount trend (line chart)
+│   │   │   ├── CalculationDetails.tsx    # Traceability drawer
+│   │   │   ├── DailyTrendChart.tsx       # Daily activity (bar chart)
+│   │   │   ├── DataLimitationWarning.tsx # Data warnings
+│   │   │   ├── DateRangeFilter.tsx       # Date range inputs
+│   │   │   ├── KpiCard.tsx               # KPI card component
+│   │   │   ├── MerchantSelector.tsx      # Merchant dropdown
+│   │   │   └── types.ts                  # Frontend type definitions
+│   │   └── lib/
+│   │       └── api.ts                    # API client
+│   └── frontend/                         # shadcn/ui-style component stubs
+│       └── page.tsx                      # Minimal page (replaced by app/)
 ├── scripts/
-│   ├── inspect_schema.py     # Reproducible schema inspection
-│   └── validate_dataset.py   # Data validation script
-├── services/
-│   └── api/
-│       ├── Dockerfile        # Backend container definition
-│       ├── requirements.txt  # Backend Python dependencies
-│       └── app/
-│           └── main.py       # FastAPI app with /health endpoint
+│   ├── inspect_schema.py                 # Reproducible schema inspection
+│   └── validate_dataset.py               # Data validation script
+├── services/api/                         # Backend (FastAPI + DuckDB)
+│   ├── Dockerfile                        # Python 3.11 slim
+│   ├── requirements.txt                  # Python dependencies
+│   ├── app/
+│   │   ├── __init__.py                   # Package init
+│   │   ├── database.py                   # DuckDB connection + query layer
+│   │   ├── main.py                       # FastAPI app (5 endpoints)
+│   │   └── models.py                     # Pydantic models + traceability
+│   └── tests/
+│       ├── conftest.py                   # Pytest fixtures
+│       └── test_stage1_s0.py             # 27 backend tests
 ├── specs/
-│   ├── constitution.md       # Project constitution (9 principles)
-│   └── 000-foundation/
-│       ├── spec.md           # Stage 0 specification
-│       ├── plan.md           # Implementation plan
-│       └── tasks.md          # Task checklist
+│   ├── constitution.md                   # Project constitution (9 principles)
+│   ├── 000-foundation/
+│   │   ├── spec.md                       # Stage 0 spec (Complete)
+│   │   ├── plan.md                       # Stage 0 plan
+│   │   └── tasks.md                      # Stage 0 task checklist
+│   └── 001-core-overview/
+│       ├── spec.md                       # Stage 1 spec (Complete)
+│       ├── plan.md                       # Stage 1 plan
+│       └── tasks.md                      # Stage 1 task checklist
 └── tests/
-    └── backend/
-        └── test_placeholder.py  # Backend test placeholder
+    └── backend/                          # (empty — tests in services/api/tests/)
 ```
 
-## Architecture Decisions
+## Stage Completion Status
 
-- **No PostgreSQL/SQLAlchemy:** DuckDB reads CSV directly
-- **CSS framework:** Vanilla CSS with Vazirmatn font (Stage 0); Tailwind planned for later stages
-- **No Metabase:** Analytics computed in backend, served via REST API
-- **No authentication:** Out of scope for Stage 0
-- **No full dataset commit:** `.gitignore` excludes all data files except sample subsets
+| Stage | Name | Status |
+|-------|------|--------|
+| 0 | Foundation | ✅ Complete |
+| 1 | Core Merchant Overview | ✅ Complete |
+| 2 | Advanced Analytics | ⏳ Not Started |
+| 3 | Merchant Performance | ⏳ Not Started |
+| 4 | Sales Share & High-Value | ⏳ Not Started |
+| 5 | AI-Powered Insights | ⏳ Not Started |

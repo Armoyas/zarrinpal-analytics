@@ -10,7 +10,6 @@ import os
 from typing import Any, Optional
 
 import duckdb
-from fastapi import HTTPException
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -44,6 +43,12 @@ def close_db() -> None:
         _db = None
 
 
+def _rows_to_dicts(result: duckdb.DuckDBPyConnection) -> list[dict[str, Any]]:
+    """Convert a DuckDB query result to a list of dicts using column names."""
+    cols = [d[0] for d in result.description]
+    return [dict(zip(cols, row)) for row in result.fetchall()]
+
+
 def _ensure_table() -> None:
     """Load CSV data into DuckDB if the table is not already populated."""
     db = _db
@@ -54,7 +59,6 @@ def _ensure_table() -> None:
             return
     except Exception:
         pass
-
     # Always load fresh to reflect the current CSV
     db.sql(f"DROP TABLE IF EXISTS {TABLE_NAME}")
     db.sql(f"""
@@ -84,7 +88,11 @@ def _date_filter(start_date: Optional[str], end_date: Optional[str]) -> str:
     return " AND ".join(parts) if parts else "TRUE"
 
 
-def _full_filter(merchant_key: Optional[str], start_date: Optional[str], end_date: Optional[str]) -> str:
+def _full_filter(
+    merchant_key: Optional[str],
+    start_date: Optional[str],
+    end_date: Optional[str],
+) -> str:
     """Combine merchant and date filters into a single WHERE clause."""
     merchant = _merchant_filter(merchant_key)
     dates = _date_filter(start_date, end_date)
@@ -100,8 +108,8 @@ def get_schema() -> list[dict[str, Any]]:
     db = get_db()
     total = db.sql("SELECT COUNT(*) as cnt FROM zp_data").fetchone()[0]
 
-    # Get column names and types
-    cols = db.sql("PRAGMA table_info(zp_data)").fetchall()
+    # Get column names and types via DESCRIBE
+    cols = db.sql("DESCRIBE zp_data").fetchall()
     results: list[dict[str, Any]] = []
 
     roles = {
@@ -121,16 +129,16 @@ def get_schema() -> list[dict[str, Any]]:
     }
 
     for col in cols:
-        name = col["name"]
+        name = col[0]  # column name is first field in DESCRIBE result
+        col_type = col[1]  # column type is second field
         # Get null count
         null_count = db.sql(
-            f"SELECT COUNT(*) FROM zp_data WHERE CAST(\"{name}\" AS VARCHAR) = '' "
-            f"OR \"{name}\" IS NULL"
+            f'SELECT COUNT(*) FROM zp_data WHERE "{name}" IS NULL OR CAST("{name}" AS VARCHAR) = \'\''
         ).fetchone()[0]
         null_pct = round(null_count / total * 100, 2) if total > 0 else 0.0
         results.append({
             "name": name,
-            "type": col["type"],
+            "type": col_type,
             "null_count": null_count,
             "null_pct": null_pct,
             "role": roles.get(name, "data"),
@@ -166,17 +174,20 @@ def get_merchants(category_id: Optional[int] = None) -> list[dict[str, Any]]:
         GROUP BY merchant_key, category_id, category_title
         ORDER BY total_amount DESC
     """
-    rows = db.sql(query).fetchall()
+    result = db.sql(query)
+    cols = [d[0] for d in result.description]
+    rows = result.fetchall()
     results: list[dict[str, Any]] = []
     for row in rows:
+        row_dict = dict(zip(cols, row))
         results.append({
-            "merchant_key": row["merchant_key"],
-            "category_id": row["category_id"],
-            "category_title": row["category_title"],
-            "terminal_keys": list(row["terminals"]),
-            "row_count": row["row_count"],
-            "total_amount": row["total_amount"],
-            "verified_count": row["verified_count"],
+            "merchant_key": row_dict["merchant_key"],
+            "category_id": row_dict["category_id"],
+            "category_title": row_dict["category_title"],
+            "terminal_keys": list(row_dict["terminals"]),
+            "row_count": row_dict["row_count"],
+            "total_amount": row_dict["total_amount"],
+            "verified_count": row_dict["verified_count"],
         })
     return results
 
@@ -231,7 +242,7 @@ def get_overview_metrics(
     # --- Success rate ---
     success_rate = round(verified_count / row_count * 100, 2) if row_count > 0 else 0.0
 
-    filters = {}
+    filters: dict[str, Any] = {}
     if merchant_key:
         filters["merchant_key"] = merchant_key
     if start_date:
@@ -355,16 +366,18 @@ def get_daily_trends(
         GROUP BY CAST(created_at AS DATE)
         ORDER BY date
     """
-    rows = db.sql(query).fetchall()
+    result = db.sql(query)
+    cols = [d[0] for d in result.description]
+    rows = result.fetchall()
     results: list[dict[str, Any]] = []
     for row in rows:
+        row_dict = dict(zip(cols, row))
         results.append({
-            "date": row["date"],
-            "attempts": row["attempts"],
-            "amount": row["amount"],
-            "sessions": row["sessions"],
-            "verified": row["verified"],
-            "failed": row["failed"],
+            "date": str(row_dict["date"]),
+            "attempts": row_dict["attempts"],
+            "amount": row_dict["amount"],
+            "sessions": row_dict["sessions"],
+            "verified": row_dict["verified"],
+            "failed": row_dict["failed"],
         })
-
     return results

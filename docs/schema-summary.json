@@ -1,0 +1,338 @@
+{
+  "file": "sample_data.csv",
+  "row_count": 10000,
+  "column_count": 22,
+  "columns": [
+    {
+      "name": "session_key",
+      "dtype": "string",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_count": 10000,
+      "sample_values": [
+        "246993cc-2b64-4906-8d0b-2c0c54c81bf2",
+        "6d961c3a-dd8c-4298-8cb3-4e8b085752b3",
+        "f10fc2b8-03b0-4523-8ed6-cf4b7271e37b",
+        "7739831f-2299-4575-b83f-e72c624a2ad8",
+        "7ee93098-57a6-461a-b9ec-25d4cc1acaf1"
+      ],
+      "role": "Session identifier"
+    },
+    {
+      "name": "try_seq",
+      "dtype": "integer",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_count": 10,
+      "sample_values": [
+        "1",
+        "8",
+        "6",
+        "4",
+        "9"
+      ],
+      "role": "Attempt identifier"
+    },
+    {
+      "name": "terminal_key",
+      "dtype": "string",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_count": 3,
+      "sample_values": [
+        "T5000",
+        "T5000",
+        "T5001",
+        "T5000",
+        "T5000"
+      ],
+      "role": "Payment terminal"
+    },
+    {
+      "name": "merchant_key",
+      "dtype": "string",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_count": 50,
+      "sample_values": [
+        "M1040",
+        "M1002",
+        "M1014",
+        "M1006",
+        "M1024"
+      ],
+      "role": "Merchant identifier"
+    },
+    {
+      "name": "category_id",
+      "dtype": "integer",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_count": 8,
+      "sample_values": [
+        "1",
+        "2",
+        "5",
+        "7",
+        "5"
+      ],
+      "role": "Merchant category code"
+    },
+    {
+      "name": "category_title",
+      "dtype": "string",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_count": 8,
+      "sample_values": [
+        "\u0622\u0645\u0648\u0632\u0634 \u0648 \u0622\u0645\u0648\u0632\u0634\u06af\u0627\u0647",
+        "\u062e\u0631\u062f\u0647\u200c\u0641\u0631\u0648\u0634\u06cc \u0622\u0646\u0644\u0627\u06cc\u0646",
+        "\u0633\u0644\u0648\u0644\u062a\u0627\u0647\u0627\u06cc \u0641\u0631\u0648\u0634\u06af\u0627\u0647\u06cc",
+        "\u0635\u0646\u0639\u062a\u06cc \u0648 \u0633\u0627\u062e\u062a\u06af\u06cc",
+        "\u0633\u0644\u0648\u0644\u062a\u0627\u0647\u0627\u06cc \u0641\u0631\u0648\u0634\u06af\u0627\u0647\u06cc"
+      ],
+      "role": "Human-readable category"
+    },
+    {
+      "name": "amount",
+      "dtype": "integer",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_count": 10000,
+      "sample_values": [
+        "49814611",
+        "14722546",
+        "486124",
+        "6540526",
+        "42237302"
+      ],
+      "role": "Payment amount"
+    },
+    {
+      "name": "adjusted_fee",
+      "dtype": "integer",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_count": 9972,
+      "sample_values": [
+        "1839414",
+        "539266",
+        "19596",
+        "245353",
+        "1661177"
+      ],
+      "role": "Fee proxy (confidentiality-scaled)"
+    },
+    {
+      "name": "session_status",
+      "dtype": "string",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_count": 6,
+      "sample_values": [
+        "InBank",
+        "Verified",
+        "InBank",
+        "Failed",
+        "Paid"
+      ],
+      "role": "Session outcome"
+    },
+    {
+      "name": "try_status",
+      "dtype": "string",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_count": 6,
+      "sample_values": [
+        "Verified",
+        "InBank",
+        "Failed",
+        "Verified",
+        "InBank"
+      ],
+      "role": "Attempt outcome"
+    },
+    {
+      "name": "switch_response_code",
+      "dtype": "string",
+      "null_count": 9402,
+      "null_percentage": 94.02,
+      "unique_count": 598,
+      "sample_values": [
+        "PSP-798:9797",
+        "PSP-798:5088",
+        "PSP-282:5349",
+        "PSP-676:5978",
+        "PSP-941:5415"
+      ],
+      "role": "Diagnostic field"
+    },
+    {
+      "name": "psp_code",
+      "dtype": "string",
+      "null_count": 9402,
+      "null_percentage": 94.02,
+      "unique_count": 446,
+      "sample_values": [
+        "PSP868",
+        "PSP782",
+        "PSP139",
+        "PSP187",
+        "PSP690"
+      ],
+      "role": "Diagnostic field"
+    },
+    {
+      "name": "issuer_bank_code",
+      "dtype": "string",
+      "null_count": 9402,
+      "null_percentage": 94.02,
+      "unique_count": 90,
+      "sample_values": [
+        "BANK-44",
+        "BANK-23",
+        "BANK-23",
+        "BANK-41",
+        "BANK-15"
+      ],
+      "role": "Diagnostic field"
+    },
+    {
+      "name": "payer_card_key",
+      "dtype": "string",
+      "null_count": 9402,
+      "null_percentage": 94.02,
+      "unique_count": 598,
+      "sample_values": [
+        "3db05ad7-119",
+        "8582a29d-42a",
+        "ed02934d-4f4",
+        "d44a4453-0e5",
+        "b88f089e-008"
+      ],
+      "role": "Payer identifier (sparse)"
+    },
+    {
+      "name": "verify_type",
+      "dtype": "string",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_count": 2,
+      "sample_values": [
+        "Manual",
+        "Manual",
+        "Manual",
+        "Automated",
+        "Automated"
+      ],
+      "role": "Verification type"
+    },
+    {
+      "name": "init_time_ms",
+      "dtype": "integer",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_count": 1938,
+      "sample_values": [
+        "228",
+        "1166",
+        "1613",
+        "1148",
+        "1404"
+      ],
+      "role": "Performance metric"
+    },
+    {
+      "name": "verify_time_ms",
+      "dtype": "integer",
+      "null_count": 9443,
+      "null_percentage": 94.43,
+      "unique_count": 499,
+      "sample_values": [
+        "1624",
+        "774",
+        "1271",
+        "292",
+        "1612"
+      ],
+      "role": "Performance metric"
+    },
+    {
+      "name": "created_at",
+      "dtype": "string",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_count": 9997,
+      "sample_values": [
+        "2024-11-21 15:29:34",
+        "2024-08-25 04:59:15",
+        "2024-02-26 18:00:01",
+        "2024-09-23 08:27:01",
+        "2024-01-26 09:18:11"
+      ],
+      "role": "Primary timestamp"
+    },
+    {
+      "name": "try_created_at",
+      "dtype": "string",
+      "null_count": 9402,
+      "null_percentage": 94.02,
+      "unique_count": 598,
+      "sample_values": [
+        "2024-09-05 07:16:57",
+        "2024-11-24 02:34:47",
+        "2024-02-12 02:23:37",
+        "2024-02-25 09:07:42",
+        "2024-12-30 20:15:15"
+      ],
+      "role": "Attempt timestamp"
+    },
+    {
+      "name": "verified_at",
+      "dtype": "string",
+      "null_count": 9443,
+      "null_percentage": 94.43,
+      "unique_count": 557,
+      "sample_values": [
+        "2024-09-05 07:36:57",
+        "2024-11-24 02:58:47",
+        "2024-02-12 02:36:37",
+        "2024-02-25 09:24:42",
+        "2024-12-30 20:39:15"
+      ],
+      "role": "Verification timestamp"
+    },
+    {
+      "name": "settled_at",
+      "dtype": "string",
+      "null_count": 9895,
+      "null_percentage": 98.95,
+      "unique_count": 105,
+      "sample_values": [
+        "2024-11-24 03:07:47",
+        "2024-11-28 09:31:16",
+        "2024-09-22 11:09:55",
+        "2024-04-17 02:51:24",
+        "2024-11-29 08:11:32"
+      ],
+      "role": "Settlement timestamp"
+    },
+    {
+      "name": "expire_in",
+      "dtype": "string",
+      "null_count": 0,
+      "null_percentage": 0.0,
+      "unique_count": 9997,
+      "sample_values": [
+        "2024-11-21 15:59:34",
+        "2024-08-25 05:29:15",
+        "2024-02-26 18:30:01",
+        "2024-09-23 08:57:01",
+        "2024-01-26 09:48:11"
+      ],
+      "role": "Session expiry"
+    }
+  ],
+  "inspected_at": "2026-08-22T15:42:01.966941"
+}
