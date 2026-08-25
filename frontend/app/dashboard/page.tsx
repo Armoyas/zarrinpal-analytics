@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
-  TrendingUp, BarChart3, AlertTriangle, Gift, Grid3X3, Table2, Brain,
+  TrendingUp, BarChart3, AlertTriangle, Gift, Grid3X3, Table2, Brain, ShoppingCart,
   PieChart, ArrowRight, DollarSign, Users, TrendingDown, Filter, HelpCircle,
 } from "lucide-react"
 import { toPersianNumber, formatCurrencyIRToman, formatPercentValue } from "@/lib/utils"
@@ -218,16 +218,7 @@ export default function DashboardPage() {
             <BarChart3 className="h-5 w-5 text-primary" />
             <span>شاخص‌های کلان</span>
           </h2>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <CalculationDetails />
-              </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-xs text-xs">
-                جزئیات محاسبه تمام متریک‌های این صفحه نمایش داده می‌شود.
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <CalculationDetails showTooltip metricType="adjusted-fee" />
         </div>
         {overviewLoading ? (
           <Skeleton className="h-40 w-full" />

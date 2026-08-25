@@ -4,45 +4,55 @@
 
 @layer base {
   :root {
-    --background: 220 20% 8%;
-    --foreground: 0 0% 95%;
-    --card: 220 20% 12%;
-    --card-foreground: 0 0% 95%;
-    --popover: 220 20% 12%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 38 100% 45%;
-    --primary-foreground: 220 30% 8%;
-    --secondary: 220 30% 15%;
-    --secondary-foreground: 0 0% 90%;
-    --muted: 220 30% 15%;
-    --muted-foreground: 0 0% 65%;
-    --accent: 38 100% 45%;
-    --accent-foreground: 220 30% 8%;
-    --destructive: 0 84% 60%;
-    --border: 220 30% 20%;
-    --input: 220 30% 20%;
-    --ring: 38 100% 45%;
+    --background: 218 25% 95%;
+    --foreground: 220 20% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 30% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 30% 8%;
+    --primary: 244 50% 38%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 218 25% 90%;
+    --secondary-foreground: 220 30% 8%;
+    --muted: 218 25% 92%;
+    --muted-foreground: 220 30% 35%;
+    --border: 220 30% 85%;
+    --input: 220 30% 85%;
+    --ring: 244 50% 38%;
+    --radius: 0.5rem;
+    --sidebar: 220 30% 10%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 244 50% 38%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 224 22% 40%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 220 30% 20%;
   }
 
   .dark {
-    --background: 220 20% 8%;
-    --foreground: 0 0% 95%;
-    --card: 220 20% 12%;
-    --card-foreground: 0 0% 93%;
-    --popover: 220 20% 12%;
-    --popover-foreground: 0 0% 93%;
-    --primary: 38 100% 45%;
-    --primary-foreground: 220 30% 8%;
-    --secondary: 220 30% 15%;
-    --secondary-foreground: 0 0% 90%;
-    --muted: 220 30% 15%;
-    --muted-foreground: 0 0% 65%;
-    --accent: 38 100% 45%;
-    --accent-foreground: 220 30% 8%;
-    --destructive: 0 84% 60%;
-    --border: 220 30% 20%;
-    --input: 220 30% 20%;
-    --ring: 38 100% 45%;
+    --background: 218 25% 95%;
+    --foreground: 220 20% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 30% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 30% 8%;
+    --primary: 244 50% 38%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 218 25% 90%;
+    --secondary-foreground: 220 30% 8%;
+    --muted: 218 25% 92%;
+    --muted-foreground: 220 30% 35%;
+    --border: 220 30% 85%;
+    --input: 220 30% 85%;
+    --ring: 244 50% 38%;
+    --radius: 0.5rem;
+    --sidebar: 220 30% 10%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 244 50% 38%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 224 22% 40%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 220 30% 20%;
   }
 }
 
@@ -52,16 +62,16 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: "Vazirmatn", system-ui, sans-serif;
+    font-family: "iransans", system-ui, sans-serif;
   }
 }
 
 /* Persian typography */
 .font-persian {
-  font-family: "Vazirmatn", system-ui, sans-serif;
+  font-family: "iransans", system-ui, sans-serif;
 }
 
-/* Scrollbar */
+/*Scrollbar*/
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -69,6 +79,6 @@
   background: hsl(220 30% 15%);
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(38 100% 45%);
+  background: hsl(244 50% 38%);
   border-radius: 4px;
 }

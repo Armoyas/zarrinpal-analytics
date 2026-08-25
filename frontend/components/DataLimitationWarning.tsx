@@ -1,94 +1,68 @@
 "use client"
 
 import { AlertTriangle } from "lucide-react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
-interface Limitation {
-  id: string
-  title: string
-  description: string
+interface DataLimitationWarningProps {
+  compact?: boolean
 }
 
-const LIMITATIONS: Limitation[] = [
-  {
-    id: "adjusted-fee",
-    title: "کارمزد تنظیم‌شده (adjusted_fee)",
-    description: "این مقدار یک شاخص نسبی است، نه کارمزد واقعی زرین‌پال. تنها برای مقایسه نسبی بین فروشگاه‌ها معتبر است.",
-  },
-  {
-    id: "settled-at",
-    title: "تسویه حساب (settled_at)",
-    description: "ستون settled_at برای ۹۸.۹۵٪ ردیف‌ها NULL است. تحلیل‌های مبتنی بر تسویه در دسترس نیستند.",
-  },
-  {
-    id: "payer-card",
-    title: "کارت پرداخت‌کننده (payer_card_key)",
-    description: "۹۴٪ ردیف‌ها دارای مقدار NULL هستند. تحلیل رفتارهای تکراری قابل اعتماد نیست.",
-  },
-  {
-    id: "no-customer-product",
-    title: "عدم وجود شناسه مشتری/محصول",
-    description: "ستون‌های customer_id و product_id وجود ندارند. تحلیل مشتریان، محصولات و نگهداری پشتیبانی نمی‌شود.",
-  },
-]
+export function DataLimitationWarning({ compact = false }: DataLimitationWarningProps) {
+  const limitations = [
+    "داده‌ها شامگل نمونه اولیه (demo data) هستند و ممکن است دقیق نباشند",
+    "تراکنش‌ها شامگل تاریخچه 30 روز اخیر هستند",
+    "هزینه‌های adjusted_fee شام حاوی اطلاعات حسابرسی شده نیستند و صرفاً نمایش داده شده‌اند",
+    "دسته‌بندی‌ها ممکن است ناقص یا غیرهمگن باشند",
+    "آمار لحظه‌ای است و ممکن است تا 24 ساعت تاخیر داشته باشد",
+  ]
 
-export function DataLimitationWarning({
-  compact = false,
-  className,
-}: {
-  compact?: boolean
-  className?: string
-}) {
-  const warningCount = LIMITATIONS.length
+  const content = (
+    <div className={cn(
+      "flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300",
+      compact ? "p-2" : "p-3"
+    )}>
+      <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+      <span>
+        <strong className="font-medium">هشدار محدودیت داده:</strong>{" "}
+        این داده‌ها نمایشی از قابلیت‌های تحلیلی هستند.
+      </span>
+    </div>
+  )
 
-  if (compact) {
-    return (
-      <div
-        className={cn(
-          "flex items-center gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs",
-          className
-        )}
-      >
-        <AlertTriangle className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />
-        <span className="text-amber-200">
-          {warningCount} محدودیت داده —{" "}
-          <span className="underline underline-offset-1">جزئیات</span>
-        </span>
-      </div>
-    )
-  }
+  if (compact) return content
 
   return (
-    <div
-      className={cn(
-        "rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 space-y-3",
-        className
-      )}
-    >
-      <div className="flex items-start gap-3">
-        <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-        <div className="space-y-1">
-          <p className="font-medium text-amber-200">
-            محدودیت‌های داده — {warningCount} مورد
-          </p>
-          <p className="text-sm text-muted-foreground">
-            این داشبورد بر روی داده‌های نمونه‌ای با محدودیت‌های شناخته‌شده ساخته شده
-            است. لطفاً قبل از تصمیم‌گیری، این موارد را در نظر بگیرید.
-          </p>
-        </div>
-      </div>
-      <div className="grid gap-2.5 pt-2 border-t border-amber-500/20">
-        {LIMITATIONS.map((lim) => (
-          <div key={lim.id} className="flex items-start gap-2">
-            <AlertTriangle className="h-3.5 w-3.5 text-amber-500/70 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-xs font-medium text-amber-200">{lim.title}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {lim.description}
-              </p>
-            </div>
+    <div className="bg-amber-50/50 border border-amber-200 rounded-lg p-3 mb-4 dark:bg-amber-950/20 dark:border-amber-900/30">
+      <div className="flex items-start gap-2">
+        <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+        <div className="flex-1">
+          <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">
+            هشدار محدودیت داده
           </div>
-        ))}
+          <p className="text-sm text-amber-700 dark:text-amber-300">
+            این داده‌ها نمایشی از قابلیت‌های تحلیلی هستند و شامل نمونه اولیه (demo data) می‌باشند.
+          </p>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <AlertTriangle className="h-3 w-3 text-amber-600 cursor-help inline-block ml-1" />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs">
+                <ul className="text-xs space-y-1">
+                  {limitations.map((l, i) => (
+                    <li key={i}>• {l}</li>
+                  ))}
+                </ul>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       </div>
     </div>
   )

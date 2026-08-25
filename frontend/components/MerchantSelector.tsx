@@ -1,107 +1,136 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useQuery } from "@tanstack/react-query"
-import { api } from "@/lib/api"
+import { useState } from "react"
+import { ChevronDown, RefreshCw, Search, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronDown, Store, RefreshCw } from "lucide-react"
-import { toPersianNumber } from "@/lib/utils"
+import { cn } from "@/lib/utils"
+import { MerchantOverview } from "@/lib/api"
+
+interface MerchantSelectorProps {
+  merchants?: MerchantOverview[]
+  selectedMerchant: string | null
+  onSelect: (merchantKey: string | null) => void
+  onRefresh: () => void
+  isLoading?: boolean
+}
 
 export function MerchantSelector({
+  merchants = [],
   selectedMerchant,
   onSelect,
   onRefresh,
-}: {
-  selectedMerchant?: string | null
-  onSelect: (merchantKey: string | null) => void
-  onRefresh?: () => void
-}) {
-  const [open, setOpen] = useState(false)
+  isLoading = false,
+}: MerchantSelectorProps) {
+  const [searchQuery, setSearchQuery] = useState("")
+  const [isOpen, setIsOpen] = useState(false)
 
-  const { data: merchants, isLoading, refetch } = useQuery({
-    queryKey: ["merchants-select"],
-    queryFn: () => api.getMerchants(50),
-    staleTime: 1000 * 60 * 3,
-  })
+  const filteredMerchants = merchants.filter(
+    (m) =>
+      m.merchant_key.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (m.category_title || "").toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
-  const handleRefresh = () => {
-    refetch()
-    onRefresh?.()
+  const selectedMerchantObj = merchants.find((m) => m.merchant_key === selectedMerchant)
+  const selectedLabel = selectedMerchantObj
+    ? `${selectedMerchantObj.merchant_key}${selectedMerchantObj.category_title ? ` — ${selectedMerchantObj.category_title}` : ""}`
+    : "انتخاب فروشگاه"
+
+  const handleSelect = (merchantKey: string) => {
+    onSelect(merchantKey)
+    setIsOpen(false)
+    setSearchQuery("")
+  }
+
+  const handleClear = () => {
+    onSelect(null)
+    setSearchQuery("")
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <DropdownMenu open={open} onOpenChange={setOpen}>
+    <div className="w-full sm:w-64">
+      <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full min-w-[180px] justify-between text-right"
+            className="w-full justify-between gap-2 pr-3 text-right"
+            disabled={isLoading}
           >
-            <span className="flex items-center gap-2">
-              <Store className="h-4 w-4" />
-              {selectedMerchant
-                ? selectedMerchant
-                : "انتخاب فروشگاه"}
+            <span className="truncate" title={selectedLabel}>
+              {selectedLabel}
             </span>
-            <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+            <ChevronDown className="h-4 w-4 opacity-60 shrink-0" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent
-          className="w-[220px] max-h-[300px] overflow-y-auto"
-          align="start"
-        >
-          <DropdownMenuLabel>
-            <div className="flex items-center justify-between">
-              <span>فروشگاه‌ها</span>
-              <button
-                onClick={handleRefresh}
-                className="rounded p-1 hover:bg-muted transition-colors"
-                aria-label="به‌روزرسانی"
-              >
-                <RefreshCw className={`h-3 w-3 ${isLoading ? "animate-spin" : ""}`} />
-              </button>
+        <DropdownMenuContent align="start" className="w-full sm:w-64 p-0">
+          <div className="p-2 border-b">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="جستجو فروشگاه..."
+                className="h-8 pl-8 text-right"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                autoFocus
+              />
             </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuRadioGroup
-            value={selectedMerchant || ""}
-            onValueChange={onSelect}
-          >
-            <DropdownMenuRadioItem value="" className="text-right">
-              <span className="flex-1 text-right">همه فروشگاه‌ها</span>
-            </DropdownMenuRadioItem>
-            {merchants?.map((m: any) => (
-              <DropdownMenuRadioItem
-                key={m.merchant_key}
-                value={m.merchant_key}
-                className="text-right"
+          </div>
+          {filteredMerchants.length === 0 ? (
+            <div className="py-6 text-center text-sm text-muted-foreground">
+              فروشگاه یافت نشد
+            </div>
+          ) : (
+            filteredMerchants.map((merchant) => (
+              <DropdownMenuItem
+                key={merchant.merchant_key}
+                onSelect={() => handleSelect(merchant.merchant_key)}
+                className="justify-between py-2 cursor-pointer"
               >
-                <span className="flex flex-col items-end flex-1">
-                  <span>{m.merchant_key}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {m.category_title || "—"} |{" "}
-                    {toPersianNumber(m.total_attempts || 0)} تلاش
-                  </span>
-                </span>
-              </DropdownMenuRadioItem>
-            ))}
-            {merchants && merchants.length === 0 && (
-              <DropdownMenuRadioItem disabled>
-                فروشگاهی یافت نشد
-              </DropdownMenuRadioItem>
-            )}
-          </DropdownMenuRadioGroup>
+                <div className="flex-1 text-right">
+                  <div className="font-medium">{merchant.merchant_key}</div>
+                  {merchant.category_title && (
+                    <div className="text-xs text-muted-foreground">
+                      {merchant.category_title}
+                    </div>
+                  )}
+                  <div className="text-xs text-muted-foreground">
+                    تراکنش: {merchant.total_attempts} | مبلغ: {merchant.total_amount.toLocaleString("fa-IR")} ریال
+                  </div>
+                </div>
+                {selectedMerchant === merchant.merchant_key && (
+                  <div className="mr-2 h-4 w-4 rounded-sm bg-primary flex items-center justify-center shrink-0">
+                    <X className="h-3 w-3 text-primary-foreground" />
+                  </div>
+                )}
+              </DropdownMenuItem>
+            ))
+          )}
+          <div className="flex justify-between items-center p-2 border-t">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClear}
+              disabled={!selectedMerchant}
+            >
+              <X className="h-3 w-3 ml-1" />
+              پاک کردن
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onRefresh}
+              disabled={isLoading}
+            >
+              <RefreshCw className={cn("h-3 w-3 ml-1", isLoading && "animate-spin")} />
+              به‌روزرسانی
+            </Button>
+          </div>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

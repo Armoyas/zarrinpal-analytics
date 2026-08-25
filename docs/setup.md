@@ -169,3 +169,18 @@ cd frontend
 npm run lint -- --fix  # auto-fix lint issues
 npm run build          # rebuild
 ```
+
+## Stage 6: Dashboard Access
+
+After starting Docker Compose, the dashboard is available at:
+- Frontend: `http://localhost:3001` (redirects to `/dashboard`)
+- API: `http://localhost:8000`
+- API Docs: `http://localhost:8000/docs`
+
+The dashboard at `/dashboard` includes:
+- Merchant selector dropdown (TopBar)
+- Date range filter (TopBar)
+- All 9 dashboard sections (overview, AI insights, payment activity, sales share, adjusted-fee, high-value, ranking, insights, nowruz)
+- Mobile-responsive sidebar navigation
+- Persian RTL layout with Vazirmatn font
+- Calculation details, data provenance, and limitation warnings

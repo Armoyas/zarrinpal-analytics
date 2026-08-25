@@ -116,6 +116,7 @@ Never use "transaction count" without a clear counting unit.
 - The full dataset (`data/sample_data.csv`) is excluded from git via `.gitignore`.
 - Only a 10-row sample may be committed for reference.
 - Commit messages use conventional commits: `feat:`, `fix:`, `chore:`, `docs:`.
+- Stage 6 commit: "feat: polish RTL mobile dashboard and prepare hackathon demo"
 - Stage 5 commit: "feat: polish RTL mobile dashboard and prepare hackathon demo"
 
 ## SDD Workflow

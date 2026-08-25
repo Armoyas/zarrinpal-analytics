@@ -71,10 +71,10 @@ All existing endpoints remain unchanged. Key endpoints:
 | Check | Result |
 |-------|--------|
 | pytest | 43 passed (21 Stage 1 + 22 Stage 2) |
-| Frontend lint | Pending validation |
-| Frontend typecheck | Pending validation |
-| Frontend build | Pending validation |
-| Docker Compose config | Pending validation |
+| Frontend lint | 0 errors (Next.js built-in) |
+| Frontend typecheck | 0 errors (tsc --noEmit) |
+| Frontend build | ✓ 7 routes (static + dynamic) |
+| Docker Compose config | ✓ Validated (zarrinpal-analytics) |
 
 ### Known Limitations
 1. `settled_at` is NULL for 98.95% of rows — cannot use for settled-only analytics
@@ -83,6 +83,12 @@ All existing endpoints remain unchanged. Key endpoints:
 4. `adjusted_fee` is confidentiality-scaled, NOT the real ZarinPal fee
 5. No `customer_id` or `product_id` columns — no customer or product analytics
 6. Category titles are Persian calendar month names, not business categories
+
+### Stage 6 — Final UX, Mobile, RTL
+
+Dashboard moved to `/dashboard` route with mobile-responsive sidebar, RTL Persian layout,
+responsive charts, skeleton loaders, empty/error states, tooltips, and calculation dialogs.
+All demo materials prepared: `docs/demo-script.md`, `docs/setup.md`, `docs/api-reference.md`.
 
 ### Environment Notes
 - **Backend**: `services/api/app/`

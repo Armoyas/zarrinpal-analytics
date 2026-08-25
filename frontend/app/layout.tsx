@@ -4,12 +4,8 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider"
 import { QueryProvider } from "@/components/providers/QueryProvider"
 
 export const metadata: Metadata = {
-  title: "ZarrinPal Analytics Dashboard",
-  description: "AI-Powered Payment Analytics Dashboard",
-  // Runtime font load — avoids build-time network calls in Docker
-  other: {
-    'font-preload': '',
-  },
+  title: "OYAZ Analytics",
+  description: "OYAZ Analytics Dashboard",
 }
 
 export default function RootLayout({
@@ -18,21 +14,18 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="fa" dir="rtl" className="font-vazirmatn">
+    <html lang="fa" dir="rtl" className="font-iransans">
       <head>
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap"
-        />
         <style>{`
           @font-face {
-            font-family: 'Vazirmatn';
+            font-family: 'iransans';
+            src: url('/fonts/iransans.ttf') format('truetype');
             font-style: normal;
             font-display: swap;
           }
         `}</style>
       </head>
-      <body className="font-sans bg-background text-foreground min-h-screen">
+      <body className="font-iransans bg-background text-foreground min-h-screen">
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

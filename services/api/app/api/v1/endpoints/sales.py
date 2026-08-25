@@ -1,18 +1,19 @@
-"""
-Stage 2 API endpoints: Sales Share and Time-Based Analytics.
+"""Stage 2 API endpoints: Sales Share and Time-Based Analytics.
 
 All endpoints return traceability metadata (how_calculated, formulas, counting_unit).
-Reuses the shared DuckDBManager singleton from app/api/v1/endpoints/__init__.py.
+Uses its own DuckDBManager instance to avoid circular imports.
 """
 from typing import Optional
 
 from fastapi import APIRouter, Query
 from starlette.concurrency import run_in_threadpool
 
-# Reuse the existing db singleton from __init__.py
-from app.api.v1.endpoints import db
+from app.db.duckdb_database import DuckDBManager
 
 router = APIRouter(tags=["stage-2-sales-share"])
+
+# Create our own DuckDBManager instance to avoid circular import
+db = DuckDBManager()
 
 
 @router.get("/sales/share")
@@ -116,7 +117,7 @@ async def highest_activity_month(
     end_date: Optional[str] = Query(None, description="ISO date: YYYY-MM-DD"),
 ):
     """Returns the single month with the highest payment attempt count."""
-    return await run_in_threadpool(
+    return run_in_threadpool(
         db.get_highest_activity_month,
         merchant_key=merchant_key, start_date=start_date, end_date=end_date,
     )

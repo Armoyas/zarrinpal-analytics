@@ -61,8 +61,9 @@ zarrinpal-analytics/
 │   │   ├── requirements.txt               # Python dependencies
 │   │   ├── tests/
 │   │   │   ├── conftest.py                # Test fixtures (auto-generates data)
-│   │   │   ├── test_duckdb.py            # DuckDB method tests (~21)
-│   │   │   └── test_stage2.py            # Stage 2 endpoint tests (~22)
+│   │   │   ├── test_duckdb.py            # DuckDB method tests (21)
+│   │   │   ├── test_stage1_s0.py          # Stage 1 endpoint tests (21)
+│   │   │   └── test_stage2.py            # Stage 2 endpoint tests (22)
 │   │   └── uv.lock                       # Python package lock
 │   │
 │   └── frontend/                          # Next.js 14 dashboard

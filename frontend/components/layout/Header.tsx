@@ -1,19 +1,10 @@
 import { ThemeToggle } from "@/components/layout/ThemeToggle"
-import { Bell, Search, Menu } from "lucide-react"
+import { Bell, Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 
-export function Header({ onMobileNavOpen }: { onMobileNavOpen?: () => void }) {
+export function Header() {
   return (
-    <header className="flex h-14 lg:h-16 items-center gap-3 sm:gap-4 border-b bg-muted/40 px-3 sm:px-4 lg:px-6">
-      {onMobileNavOpen && (
-        <button
-          onClick={onMobileNavOpen}
-          className="rounded p-1.5 hover:bg-muted transition-colors lg:hidden"
-          aria-label="باز کردن منو"
-        >
-          <Menu className="h-5 w-5 text-foreground" />
-        </button>
-      )}
+    <header className="flex h-14 lg:h-16 items-center gap-3 sm:gap-4 border-b bg-muted/40 px-4 sm:px-6">
       <div className="w-full flex-1">
         <form onSubmit={(e) => e.preventDefault()}>
           <div className="relative">
