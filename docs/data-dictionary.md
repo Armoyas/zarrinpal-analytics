@@ -1,198 +1,181 @@
-# Data Dictionary
+# Data Dictionary — ZarrinPal Analytics
 
-**Source file:** `sample_data.csv` (sample subset of full dataset, max 100 rows)
-**Rows (sample):** see `docs/data-quality-report.md` for full inspection
+**Source file:** `smaple.csv`
+**Rows:** 19,999
 **Columns:** 22
 **Currency:** Iranian rial (IRR)
-**Timezone:** Asia/Tehran (assume unless `created_at` timestamp includes offset)
-**Adjusted-fee note:** The `adjusted_fee` column is confidentially-scaled and must NOT be presented as the real ZarinPal fee. Relative comparisons within the dataset are valid; absolute fee values are not.
-
----
-
-## Columns
+**adjust_fee note:** The `adjusted_fee` column is confidentiality-scaled and must not be presented as the real
+ZarinPal fee. Relative comparisons remain valid.
 
 ### `session_key`
-- **Source:** Dataset column
-- **Type:** string (UUID-like)
+- **Type:** integer
 - **Nulls:** 0 (0.00%)
-- **Unique values:** See full dataset report
-- **Description:** Unique identifier for a payment session. A session may contain one or more attempts (rows) distinguished by `try_seq`.
-- **Role:** Session identifier
+- **Unique values:** 19506
+- **Min:** 200
+- **Max:** 2062743
+- **Examples:** 1371823, 1303374, 23960, 1648036, 1992156
 
 ### `try_seq`
-- **Source:** Dataset column
 - **Type:** integer
 - **Nulls:** 0 (0.00%)
-- **Description:** Attempt sequence number within a session. `try_seq = 0` or `try_seq = 1` typically indicates the first attempt. Higher values indicate retry attempts for the same session.
-- **Role:** Attempt identifier (combined with session_key to identify a unique attempt)
+- **Unique values:** 23
+- **Min:** 0
+- **Max:** 22
+- **Examples:** 1, 1, 1, 1, 0
 
 ### `terminal_key`
-- **Source:** Dataset column
-- **Type:** string (e.g., `T5000`, `T5001`)
+- **Type:** string
 - **Nulls:** 0 (0.00%)
-- **Description:** Terminal identifier used for the payment attempt.
-- **Role:** Payment terminal
+- **Unique values:** 29
+- **Examples:** T318, T318, T318, T318, T318
+- **Value counts:** T99: 5915, T196: 5020, T309: 3908, T59: 1804, T261: 1240, T97: 1156, T1: 208, T339: 202, T78: 91, T312: 78
 
 ### `merchant_key`
-- **Source:** Dataset column
-- **Type:** string (e.g., `M1000`, `M1001`)
+- **Type:** string
 - **Nulls:** 0 (0.00%)
-- **Description:** Unique identifier for the merchant. Every merchant has multiple terminal keys.
-- **Role:** Merchant identifier
+- **Unique values:** 29
+- **Examples:** M145, M145, M145, M145, M145
+- **Value counts:** M31: 5915, M43: 5020, M208: 3908, M250: 1804, M210: 1240, M37: 1156, M333: 208, M262: 202, M215: 91, M61: 78
 
 ### `category_id`
-- **Source:** Dataset column
 - **Type:** integer
 - **Nulls:** 0 (0.00%)
-- **Description:** Numeric category code for the merchant's business category.
-- **Role:** Merchant category code
+- **Unique values:** 5
+- **Min:** 48160000
+- **Max:** 82410000
+- **Examples:** 48160002, 48160002, 48160002, 48160002, 48160002
 
 ### `category_title`
-- **Source:** Dataset column
-- **Type:** string (Persian)
+- **Type:** string
 - **Nulls:** 0 (0.00%)
-- **Description:** Persian text label for the merchant's business category (e.g., `آموزش و آموزشگاه`, `خرده‌فروشی آنلاین`).
-- **Role:** Human-readable category
+- **Unique values:** 5
+- **Examples:** ارائه دهنده خدمات اینترنت, ارائه دهنده خدمات اینترنت, ارائه دهنده خدمات اینترنت, ارائه دهنده خدمات اینترنت, ارائه دهنده خدمات اینترنت
+- **Value counts:** کیف و کفش فروشی: 6577, مراکز آموزشی مجازی: 6057, خدمات شبکه‌های کامپیوتری و اینترنت: 5807, ارائه دهنده خدمات اینترنت: 1296, فروشگاه لوازم آرایشی و بهداشتی: 262
 
 ### `amount`
-- **Source:** Dataset column
 - **Type:** integer
-- **Unit:** Iranian rial (IRR)
 - **Nulls:** 0 (0.00%)
-- **Description:** Transaction amount in IRR.
-- **Role:** Payment amount
+- **Unique values:** 747
+- **Min:** 1000
+- **Max:** 901600000
+- **Examples:** 6390000, 6390000, 3690000, 3799000, 12490000
 
 ### `adjusted_fee`
-- **Source:** Dataset column
 - **Type:** integer
-- **Unit:** Iranian rial (IRR) — but NOT the real ZarinPal fee
 - **Nulls:** 0 (0.00%)
-- **Description:** Confidentiality-adjusted fee indicator. This column is scaled/obfuscated to preserve ZarinPal's fee structure confidentiality. It is NOT the actual ZarinPal fee. Relative comparisons within a dataset are valid; absolute values are NOT.
-- **Role:** Fee proxy indicator (with documented limitations)
-- **Formula:** N/A (raw column value, not a computed metric)
+- **Unique values:** 706
+- **Min:** 1920
+- **Max:** 218400
+- **Examples:** 56720, 56720, 35120, 35992, 105520
 
 ### `session_status`
-- **Source:** Dataset column
 - **Type:** string
 - **Nulls:** 0 (0.00%)
-- **Values:** `Verified`, `InBank`, `Failed`, `Paid`, `NoAttempt`, `Reversed`
-- **Description:** Aggregated status of the payment session (best attempt outcome).
-- **Role:** Session outcome
+- **Unique values:** 3
+- **Examples:** Failed, Failed, Failed, Verified, Failed
+- **Value counts:** Failed: 10231, Verified: 9502, Paid: 266
 
 ### `try_status`
-- **Source:** Dataset column
 - **Type:** string
 - **Nulls:** 0 (0.00%)
-- **Values:** `Verified`, `InBank`, `Failed`, `Paid`, `NoAttempt`, `Reversed`
-- **Description:** Status of the individual payment attempt.
-- **Role:** Attempt outcome
+- **Unique values:** 5
+- **Examples:** Failed, InBank, InBank, Verified, NoAttempt
+- **Value counts:** Verified: 9379, InBank: 8677, NoAttempt: 1488, Paid: 262, Failed: 193
 
 ### `switch_response_code`
-- **Source:** Dataset column
 - **Type:** string
-- **Nulls:** ~94% (high missing rate)
-- **Description:** Response code from the payment switch (card network). Often missing when transaction does not reach the switch.
-- **Role:** Diagnostic field
+- **Nulls:** 19,302 (96.51%)
+- **Unique values:** 36
+- **Examples:** PSP-05:55, PSP-03:56, PSP-03:56, PSP-03:56, PSP-03:59
+- **Value counts:** PSP-05:12: 99, PSP-03:56: 95, PSP-03:51: 66, PSP-03:-3: 65, PSP-05:21: 63, PSP-05:15: 52, PSP-03:59: 49, PSP-05:-100: 32, PSP-03:54: 29, PSP-03:55: 26
 
 ### `psp_code`
-- **Source:** Dataset column
 - **Type:** string
-- **Nulls:** ~94% (high missing rate)
-- **Description:** PSP (Payment Service Provider) response code.
-- **Role:** Diagnostic field
+- **Nulls:** 1,488 (7.44%)
+- **Unique values:** 7
+- **Examples:** PSP-05, PSP-05, PSP-05, PSP-05, PSP-02
+- **Value counts:** PSP-03: 11973, PSP-05: 5853, PSP-07: 344, PSP-04: 184, PSP-01: 85, PSP-06: 44, PSP-02: 28
 
 ### `issuer_bank_code`
-- **Source:** Dataset column
 - **Type:** string
-- **Nulls:** ~94% (high missing rate)
-- **Description:** Code of the issuer bank.
-- **Role:** Diagnostic field
+- **Nulls:** 10,358 (51.79%)
+- **Unique values:** 27
+- **Examples:** BANK-31, BANK-17, BANK-27, BANK-27, BANK-08
+- **Value counts:** BANK-14: 2156, BANK-18: 1868, BANK-31: 1070, BANK-17: 564, BANK-12: 551, BANK-27: 504, BANK-29: 443, BANK-08: 372, BANK-25: 343, BANK-16: 328
 
 ### `payer_card_key`
-- **Source:** Dataset column
-- **Type:** string (masked card identifier)
-- **Nulls:** ~94% (high missing rate)
-- **Description:** Masked payer card key. Sparse data means repeat-behavior analysis is NOT reliable.
-- **Role:** Payer identifier (with documented limitation)
+- **Type:** string
+- **Nulls:** 10,358 (51.79%)
+- **Unique values:** 7865
+- **Examples:** CARD-181237, CARD-145374, CARD-188168, CARD-148656, CARD-192289
+- **Value counts:** CARD-195918: 22, CARD-112072: 21, CARD-163501: 18, CARD-182818: 18, CARD-231451: 15, CARD-322291: 15, CARD-67424: 14, CARD-9194: 14, CARD-280133: 12, CARD-126747: 12
 
 ### `verify_type`
-- **Source:** Dataset column
 - **Type:** string
 - **Nulls:** 0 (0.00%)
-- **Values:** `Manual`, `Automated`
-- **Description:** Whether verification was manual or automated.
-- **Role:** Verification type
+- **Unique values:** 2
+- **Examples:** Automated, Automated, Automated, Automated, Automated
+- **Value counts:** Automated: 18730, Manual: 1269
 
 ### `init_time_ms`
-- **Source:** Dataset column
-- **Type:** integer
-- **Unit:** milliseconds
-- **Nulls:** 0 (0.00%)
-- **Description:** Time taken for initialization phase of the payment attempt.
-- **Role:** Performance metric
+- **Type:** float
+- **Nulls:** 1,784 (8.92%)
+- **Unique values:** 406
+- **Min:** 53.0
+- **Max:** 32156.0
+- **Examples:** 86.0, 175.0, 201.0, 82.0, 100.0
 
 ### `verify_time_ms`
-- **Source:** Dataset column
 - **Type:** float
-- **Unit:** milliseconds
-- **Nulls:** ~94% (high missing rate)
-- **Description:** Time taken for verification phase. Missing when verification was not performed.
-- **Role:** Performance metric
+- **Nulls:** 10,360 (51.80%)
+- **Unique values:** 323
+- **Min:** 51.0
+- **Max:** 11006.0
+- **Examples:** 79.0, 159.0, 139.0, 83.0, 102.0
 
 ### `created_at`
-- **Source:** Dataset column
-- **Type:** datetime (string format: `YYYY-MM-DD HH:MM:SS`)
+- **Type:** datetime
 - **Nulls:** 0 (0.00%)
-- **Description:** Timestamp when the payment attempt was created.
-- **Role:** Primary timestamp, always available
+- **Unique values:** 18987
+- **Examples:** 2026-01-02 11:52:56, 2026-01-02 14:25:23, 2026-01-02 21:54:18, 2026-01-03 10:58:55, 2026-01-24 01:26:14
 
 ### `try_created_at`
-- **Source:** Dataset column
-- **Type:** datetime (string format: `YYYY-MM-DD HH:MM:SS`)
-- **Nulls:** ~94% (high missing rate)
-- **Description:** Timestamp when the try/attempt was created.
-- **Role:** Attempt timestamp
+- **Type:** datetime
+- **Nulls:** 1,488 (7.44%)
+- **Unique values:** 17997
+- **Examples:** 2026-01-02 11:52:56, 2026-01-02 14:25:24, 2026-01-02 21:54:18, 2026-01-03 10:58:55, 2026-01-24 01:30:55
 
 ### `verified_at`
-- **Source:** Dataset column
-- **Type:** datetime (string format: `YYYY-MM-DD HH:MM:SS`)
-- **Nulls:** ~94% (high missing rate)
-- **Description:** Timestamp when the payment was verified.
-- **Role:** Verification timestamp
+- **Type:** datetime
+- **Nulls:** 10,497 (52.49%)
+- **Unique values:** 9279
+- **Examples:** 2026-01-03 11:00:37, 2026-01-24 12:07:02, 2026-01-25 12:10:17, 2026-01-08 20:13:16, 2026-01-01 14:12:29
 
 ### `settled_at`
-- **Source:** Dataset column
-- **Type:** datetime (string format: `YYYY-MM-DD HH:MM:SS`)
-- **Nulls:** ~99% (very high missing rate)
-- **Description:** Timestamp when the payment was settled. Very sparse.
-- **Role:** Settlement timestamp
+- **Type:** datetime
+- **Nulls:** 10,231 (51.16%)
+- **Unique values:** 9546
+- **Examples:** 2026-01-03 11:00:35, 2026-01-24 12:07:00, 2026-01-25 12:10:16, 2026-01-08 20:13:13, 2026-01-01 14:12:27
 
 ### `expire_in`
-- **Source:** Dataset column
-- **Type:** string (datetime format)
+- **Type:** string
 - **Nulls:** 0 (0.00%)
-- **Description:** Expiration timestamp for the payment session.
-- **Role:** Session expiry
+- **Unique values:** 18976
+- **Examples:** 2026-01-02 12:22:56, 2026-01-02 14:55:23, 2026-01-02 22:24:18, 2026-01-03 11:28:55, 2026-01-24 01:56:14
+- **Value counts:** 2026-01-24 02:01:44: 22, 2026-01-23 01:06:17: 22, 2026-01-02 18:41:02: 15, 2026-01-24 02:27:01: 14, 2026-01-23 01:21:35: 13, 2026-01-24 01:55:18: 13, 2026-01-24 01:56:33: 13, 2026-01-23 01:00:55: 12, 2026-01-23 01:08:21: 12, 2026-01-23 01:16:20: 12
 
----
+## Column Analysis
 
-## Entity Relationships
+- **Numeric columns:** session_key, try_seq, category_id, amount, adjusted_fee, init_time_ms, verify_time_ms
+- **Datetime columns:** created_at, try_created_at, verified_at, settled_at
+- **Categorical/text columns:** terminal_key, merchant_key, category_title, session_status, try_status, switch_response_code, psp_code, issuer_bank_code, payer_card_key, verify_type, expire_in
 
-| Entity | Identifier | Description |
-|--------|-----------|-------------|
-| **Row (attempt)** | `session_key` + `try_seq` | A single payment attempt |
-| **Session** | `session_key` | A payment session, potentially with multiple attempts |
-| **Merchant** | `merchant_key` | A ZarinPal merchant; has multiple terminals |
-| **Terminal** | `terminal_key` | A payment terminal; belongs to a merchant |
+## Key Findings
 
-## Derived Metric Formulas
-
-| Metric | Formula | Source Columns |
-|--------|---------|---------------|
-| Verified payment count | `COUNT WHERE session_status = 'Verified'` | `session_status` |
-| Verified session share | `COUNT(Verified) / COUNT(DISTINCT session_key)` | `session_status`, `session_key` |
-| Success rate | `COUNT(Verified) / COUNT(*)` | `session_status` |
-| Merchant transaction volume | `SUM(amount) GROUP BY merchant_key` | `amount`, `merchant_key` |
-| Merchant sales share | `SUM(amount) for merchant / SUM(amount)` | `amount`, `merchant_key` |
-| High-value threshold | `amount > 75th percentile` | `amount` |
-| Avg adjusted_fee ratio | `SUM(adjusted_fee) / SUM(amount)` | `adjusted_fee`, `amount` |
+- **Date column:** `created_at` (ISO 8601 datetime)
+- **Merchant identifier:** `merchant_key`
+- **Amount column:** `amount` (Rials)
+- **Status column:** `session_status` with values: Failed, Verified, Paid
+- **adjusted_fee:** Scaled value — relative comparisons only
+- **No reliable `customer_id` column found**
+- **No reliable `product_id` column found**

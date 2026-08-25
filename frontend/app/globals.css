@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 20% 8%;
+    --foreground: 0 0% 95%;
+    --card: 220 20% 12%;
+    --card-foreground: 0 0% 95%;
+    --popover: 220 20% 12%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 38 100% 45%;
+    --primary-foreground: 220 30% 8%;
+    --secondary: 220 30% 15%;
+    --secondary-foreground: 0 0% 90%;
+    --muted: 220 30% 15%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 38 100% 45%;
+    --accent-foreground: 220 30% 8%;
+    --destructive: 0 84% 60%;
+    --border: 220 30% 20%;
+    --input: 220 30% 20%;
+    --ring: 38 100% 45%;
+  }
+
+  .dark {
+    --background: 220 20% 8%;
+    --foreground: 0 0% 95%;
+    --card: 220 20% 12%;
+    --card-foreground: 0 0% 93%;
+    --popover: 220 20% 12%;
+    --popover-foreground: 0 0% 93%;
+    --primary: 38 100% 45%;
+    --primary-foreground: 220 30% 8%;
+    --secondary: 220 30% 15%;
+    --secondary-foreground: 0 0% 90%;
+    --muted: 220 30% 15%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 38 100% 45%;
+    --accent-foreground: 220 30% 8%;
+    --destructive: 0 84% 60%;
+    --border: 220 30% 20%;
+    --input: 220 30% 20%;
+    --ring: 38 100% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Vazirmatn", system-ui, sans-serif;
+  }
+}
+
+/* Persian typography */
+.font-persian {
+  font-family: "Vazirmatn", system-ui, sans-serif;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(220 30% 15%);
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(38 100% 45%);
+  border-radius: 4px;
+}
