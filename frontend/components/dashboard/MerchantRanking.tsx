@@ -11,7 +11,7 @@ import Link from "next/link"
 export function MerchantRanking({ onMerchantSelect }: {
   onMerchantSelect?: (merchantKey: string) => void
 }) {
-  const { data: merchants, isLoading } = useQuery<MerchantOverview[]>({
+  const { data: merchants, isLoading } = useQuery<MerchantOverview[] | null>({
     queryKey: ["merchants-ranking"],
     queryFn: () => api.getMerchants(50),
   })
@@ -33,7 +33,7 @@ export function MerchantRanking({ onMerchantSelect }: {
     )
   }
 
-  if (!merchants || merchants.length === 0) {
+  if (!merchants || !Array.isArray(merchants) || merchants.length === 0) {
     return (
       <Card>
         <CardContent className="pt-6">
@@ -69,7 +69,7 @@ export function MerchantRanking({ onMerchantSelect }: {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {merchants.map((merchant, index: number) => {
+          {(merchants || []).map((merchant: MerchantOverview, index: number) => {
             const statusInfo = getStatusInfo(merchant.success_rate_pct || 0)
             const totalAmount = merchant.total_amount || 0
             const handleClick = () => {
