@@ -232,17 +232,23 @@ export interface AIChatResponse {
 }
 
 // API Methods
-async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    ...options,
-  })
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status} ${response.statusText}`)
+async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      ...options,
+    })
+    if (!response.ok) {
+      console.warn(`API error: ${response.status} ${response.statusText}`)
+      return null
+    }
+    return response.json()
+  } catch (error) {
+    console.warn('Network error during API call:', error)
+    return null
   }
-  return response.json()
 }
 
 // Transform backend merchant data to frontend-friendly format

@@ -43,7 +43,7 @@ export function AIChat() {
       const assistantMessage: Message = {
         id: Date.now().toString(),
         role: "assistant",
-        content: data.response || "پاسخی یافت نشد.",
+        content: data?.response || "پاسخی یافت نشد.",
         timestamp: new Date().toISOString(),
       }
       setMessages((prev) => [...prev, assistantMessage])
