@@ -1,150 +1,195 @@
 #!/usr/bin/env python3
-"""
-inspect_schema.py — Reproducible schema inspection for ZarrinPal analytical dashboard.
-
-Scans a CSV file and produces a schema summary (JSON) and a data dictionary (Markdown).
-This script is the single source of truth for dataset schema documentation.
+"""Inspect the CSV schema and produce a data dictionary.
 
 Usage:
-    python scripts/inspect_schema.py --csv data/sample_data.csv --output docs/data-dictionary.md
-    python scripts/inspect_schema.py --csv data/sample_data.csv --json docs/schema-summary.json
+    python scripts/inspect_schema.py --csv data/sample_data.csv --out docs/schema-summary.json
+
+Output:
+    - docs/data-dictionary.md  (human-readable)
+    - docs/schema-summary.json (machine-readable)
 """
 
 import argparse
+import csv
 import json
-import os
-import sys
+from collections import defaultdict
 from datetime import datetime
-from typing import Any
+from pathlib import Path
 
 import pandas as pd
 
 
-def infer_column_role(col_name: str) -> str:
-    """Infer a semantic role for each column based on its name."""
-    roles = {
-        "session_key": "Session identifier",
-        "try_seq": "Attempt identifier",
-        "terminal_key": "Payment terminal",
-        "merchant_key": "Merchant identifier",
-        "category_id": "Merchant category code",
-        "category_title": "Human-readable category",
-        "amount": "Payment amount",
-        "adjusted_fee": "Fee proxy (confidentiality-scaled)",
-        "session_status": "Session outcome",
-        "try_status": "Attempt outcome",
-        "switch_response_code": "Diagnostic field",
-        "psp_code": "Diagnostic field",
-        "issuer_bank_code": "Diagnostic field",
-        "payer_card_key": "Payer identifier (sparse)",
-        "verify_type": "Verification type",
-        "init_time_ms": "Performance metric",
-        "verify_time_ms": "Performance metric",
-        "created_at": "Primary timestamp",
-        "try_created_at": "Attempt timestamp",
-        "verified_at": "Verification timestamp",
-        "settled_at": "Settlement timestamp",
-        "expire_in": "Session expiry",
+def infer_type(series, col_name=None):
+    """Attempt to infer the type of a column."""
+    non_null = series.dropna()
+    if len(non_null) == 0:
+        return "object"
+    sample = non_null.head(1000).astype(str)
+
+    # Integer?
+    try:
+        sample.astype(int)
+        return "integer"
+    except (ValueError, TypeError):
+        pass
+
+    # Float?
+    try:
+        sample.astype(float)
+        return "float"
+    except (ValueError, TypeError):
+        pass
+
+    # Datetime?
+    if col_name in ("created_at", "try_created_at", "verified_at", "settled_at", "expire_in"):
+        try:
+            sample.apply(pd.to_datetime)
+            return "datetime"
+        except Exception:
+            pass
+    # For other columns, check if they look like timestamps (ISO or space-separated)
+    else:
+        sample_str = non_null.head(1000).astype(str)
+        if sample_str.str.match(r'^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}').any():
+            return "datetime"
+
+    return "string"
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Inspect CSV schema")
+    parser.add_argument("--csv", required=True, help="Path to CSV file")
+    parser.add_argument("--out", default="docs/schema-summary.json",
+                        help="Output JSON path")
+    args = parser.parse_args()
+
+    csv_path = Path(args.csv)
+    if not csv_path.exists():
+        print(f"ERROR: CSV file not found: {csv_path}")
+        raise SystemExit(1)
+
+    # Use pandas for robust CSV handling
+    df = pd.read_csv(csv_path, low_memory=False)
+
+    # Output
+    out_json_path = Path(args.out)
+    out_json_path.parent.mkdir(parents=True, exist_ok=True)
+    out_md_path = out_json_path.parent / "data-dictionary.md"
+
+    summary = {
+        "file": str(csv_path),
+        "row_count": len(df),
+        "column_count": len(df.columns),
+        "columns": [],
     }
-    return roles.get(col_name, "Uncategorized")
 
+    md_lines = [
+        "# Data Dictionary — ZarrinPal Analytics",
+        "",
+        f"**Source file:** `{csv_path}`",
+        f"**Rows:** {len(df):,}",
+        f"**Columns:** {len(df.columns)}",
+        "",
+    ]
 
-def inspect_csv(csv_path: str) -> dict[str, Any]:
-    """Inspect a CSV file and return schema summary."""
-    df = pd.read_csv(csv_path, dtype=str, low_memory=False)
+    numeric_cols = []
+    datetime_cols = []
+    categorical_cols = []
 
-    columns = []
     for col in df.columns:
-        null_count = int(df[col].isna().sum())
-        unique_count = int(df[col].nunique(dropna=True))
-        null_pct = round((null_count / len(df)) * 100, 4)
+        series = df[col]
+        nulls = series.isna().sum()
+        null_pct = (nulls / len(df)) * 100 if len(df) > 0 else 0
 
-        # Determine inferred dtype
-        sample_vals = df[col].dropna().head(5).tolist()
-
-        # Try numeric inference
-        dtype = "string"
-        if sample_vals:
-            try:
-                pd.to_numeric(df[col].dropna().head(100))
-                dtype = "integer" if pd.to_numeric(df[col].dropna().head(100)).apply(lambda x: x == int(x)).all() else "float"
-            except (ValueError, TypeError):
-                dtype = "string"
+        dtype = infer_type(series, col)
 
         col_info = {
             "name": col,
             "dtype": dtype,
-            "null_count": null_count,
-            "null_percentage": null_pct,
-            "unique_count": unique_count,
-            "sample_values": sample_vals[:5],
-            "role": infer_column_role(col),
+            "null_count": int(nulls),
+            "null_percentage": round(null_pct, 2),
+            "unique_count": int(series.nunique()),
         }
-        columns.append(col_info)
 
-    summary = {
-        "file": os.path.basename(csv_path),
-        "row_count": len(df),
-        "column_count": len(df.columns),
-        "columns": columns,
-        "inspected_at": datetime.now().isoformat(),
-    }
-    return summary
+        if dtype == "integer":
+            col_info["min"] = int(series.min())
+            col_info["max"] = int(series.max())
+            numeric_cols.append(col)
+        elif dtype == "float":
+            col_info["min"] = float(series.min())
+            col_info["max"] = float(series.max())
+            numeric_cols.append(col)
+        elif dtype == "datetime":
+            col_info["min"] = str(series.min())
+            col_info["max"] = str(series.max())
+            datetime_cols.append(col)
+        else:
+            # Categorical
+            values = series.dropna().astype(str)
+            value_counts = values.value_counts().head(10).to_dict()
+            col_info["sample_values"] = list(values.head(5).unique())
+            col_info["value_counts"] = value_counts
+            categorical_cols.append(col)
 
+        # Example values (non-null)
+        col_info["example_values"] = [
+            str(v) for v in series.dropna().head(5).tolist()
+        ]
 
-def generate_markdown(summary: dict[str, Any]) -> str:
-    """Generate Markdown data dictionary from schema summary."""
-    lines = []
-    lines.append("# Data Dictionary")
-    lines.append("")
-    lines.append(f"**Source file:** `{summary['file']}`")
-    lines.append(f"**Rows:** {summary['row_count']}")
-    lines.append(f"**Columns:** {summary['column_count']}")
-    lines.append(f"**Currency:** Iranian rial (IRR)")
-    lines.append("")
-    lines.append("**Adjusted-fee note:** The `adjusted_fee` column is confidentiality-adjusted and must NOT be presented as the real ZarinPal fee.")
-    lines.append("")
-    lines.append("---")
-    lines.append("")
+        summary["columns"].append(col_info)
 
-    for col in summary["columns"]:
-        lines.append(f"### `{col['name']}`")
-        lines.append(f"- **Type:** {col['dtype']}")
-        lines.append(f"- **Nulls:** {col['null_count']} ({col['null_percentage']}%)")
-        lines.append(f"- **Unique values:** {col['unique_count']}")
-        lines.append(f"- **Role:** {col['role']}")
-        lines.append(f"- **Sample values:** {col['sample_values']}")
-        lines.append("")
+        # Build markdown
+        md_lines.append(f"### `{col}`")
+        md_lines.append(f"- **Type:** {col_info['dtype']}")
+        md_lines.append(f"- **Nulls:** {nulls:,} ({null_pct:.2f}%)")
+        md_lines.append(f"- **Unique values:** {col_info['unique_count']}")
+        if dtype in ("integer", "float"):
+            md_lines.append(f"- **Min:** {col_info['min']}")
+            md_lines.append(f"- **Max:** {col_info['max']}")
+        if col_info.get("example_values"):
+            md_lines.append(f"- **Examples:** {', '.join(col_info['example_values'][:5])}")
+        if col_info.get("value_counts"):
+            vc_str = ", ".join(f"{k}: {v}" for k, v in col_info["value_counts"].items())
+            md_lines.append(f"- **Value counts:** {vc_str}")
+        md_lines.append("")
 
-    return "\n".join(lines)
+    # Analysis section
+    md_lines.extend([
+        "## Column Analysis",
+        "",
+        f"- **Numeric columns:** {', '.join(numeric_cols) if numeric_cols else 'None'}",
+        f"- **Datetime columns:** {', '.join(datetime_cols) if datetime_cols else 'None'}",
+        f"- **Categorical/text columns:** {', '.join(categorical_cols) if categorical_cols else 'None'}",
+        "",
+    ])
 
+    # Key findings
+    md_lines.extend([
+        "## Key Findings",
+        "",
+        "- **Date column:** `created_at` (datetime, space-separated format)",
+        "- **Merchant identifier:** `merchant_key`",
+        "- **Amount column:** `amount` (IRR - Iranian Rial)",
+        "- **Currency:** IRR (Iranian Rial, ISO 4217)",
+        f"- **Status column:** `session_status` with values: {', '.join(str(v) for v in df['session_status'].unique()) if 'session_status' in df.columns else 'N/A'}",
+        "- **adjusted_fee:** Confidentiality-scaled value — relative comparisons only (NOT actual ZarinPal fee)",
+        "- **No reliable `customer_id` column found**",
+        "- **No reliable `product_id` column found**",
+        "",
+    ])
 
-def main():
-    parser = argparse.ArgumentParser(description="Inspect CSV schema for ZarinPal dashboard")
-    parser.add_argument("--csv", required=True, help="Path to CSV file")
-    parser.add_argument("--output", help="Output Markdown file path")
-    parser.add_argument("--json", help="Output JSON summary file path")
-    args = parser.parse_args()
+    # Write files
+    with open(out_json_path, "w") as f:
+        json.dump(summary, f, indent=2)
 
-    if not os.path.exists(args.csv):
-        print(f"Error: CSV file not found: {args.csv}", file=sys.stderr)
-        sys.exit(1)
+    with open(out_md_path, "w") as f:
+        f.write("\n".join(md_lines))
 
-    summary = inspect_csv(args.csv)
-
-    if args.json:
-        with open(args.json, "w") as f:
-            json.dump(summary, f, indent=2)
-        print(f"JSON summary written to {args.json}")
-
-    if args.output:
-        md = generate_markdown(summary)
-        with open(args.output, "w") as f:
-            f.write(md)
-        print(f"Markdown data dictionary written to {args.output}")
-
-    # Always print to stdout
-    print(json.dumps(summary, indent=2))
+    print(f"Schema summary written to {out_json_path}")
+    print(f"Data dictionary written to {out_md_path}")
+    print(f"\nColumns found ({len(df.columns)}):")
+    for col in df.columns:
+        print(f"  - {col} ({infer_type(df[col])})")
 
 
 if __name__ == "__main__":

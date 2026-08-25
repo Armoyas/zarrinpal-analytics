@@ -1,31 +1,40 @@
-import type { Metadata } from "next";
-import { Vazirmatn } from "next/font/google";
-import "@/app/styles/globals.css";
-
-const vazirmatn = Vazirmatn({
-  subsets: ["latin", "arabic"],
-  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
-  variable: "--font-vazirmatn",
-});
+import type { Metadata } from "next"
+import "./globals.css"
+import { ThemeProvider } from "@/components/providers/ThemeProvider"
+import { QueryProvider } from "@/components/providers/QueryProvider"
 
 export const metadata: Metadata = {
-  title: "داشبورد تحلیلی زرین‌پال",
-  description: "داشبورد تحلیلی برای فروشندگان زرین‌پال — فاز 3: تحلیل کارمزد تنظیم‌شده، سهم فروش، و فعالیت زمانی",
-};
+  title: "ZarrinPal Analytics Dashboard",
+  description: "AI-Powered Payment Analytics Dashboard",
+  other: {
+    'font-preload': '',
+  },
+}
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
-    <html lang="fa" dir="rtl">
+    <html lang="fa" dir="rtl" className="font-vazirmatn">
       <head>
-        <link rel="icon" href="/favicon.ico" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap"
+        />
+        <style>{`\n          @font-face {\n            font-family: "Vazirmatn";\n            font-style: normal;\n            font-display: swap;\n          }\n        `}</style>
       </head>
-      <body className={vazirmatn.variable}>
-        {children}
+      <body className="font-sans bg-background text-foreground min-h-screen">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={false}
+          disableTransitionOnChange
+        >
+          <QueryProvider>{children}</QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
-  );
+  )
 }

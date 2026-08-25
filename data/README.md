@@ -1,56 +1,90 @@
-## Data Limitation Warning
+# صفحه داده‌ها / Data Directory
 
-This dashboard is built from ZarinPal payment sample data. Before interpreting
-results, please understand these important limitations:
+> ⚠️ **هرگز فایل کامل CSV را commit نکنید** (حجم ~۴۸۰ مگابایت). این پوشه در
+> `.gitignore` مستثنا شده است — فقط این `README.md` و فایل نمونه کوچک در مخزن می‌مانند.
 
-### Adjusted Fee
+## دریافت دیتاست
 
-The `adjusted_fee` column is **NOT** the actual ZarinPal fee. It is a
-confidentiality-adjusted indicator. While relative comparisons within the
-dataset may be valid, absolute fee values are not. `adjusted_fee` is **not**
-displayed as a metric in this dashboard.
+دیتاست رسمی چالش را از لینک چالش دانلود کنید و در اینجا قرار دهید:
 
-### Settled Payments
+```bash
+# ساختار مورد انتظار
+./data/zarrinpal_dataset.csv
+```
 
-`settled_at` is approximately **99% null** in the dataset (98.95% missing).
-Only about 105 of 10,000 rows have settlement timestamps. Settlement analysis
-is severely limited by this data sparsity.
+## ساخت نمونه کوچک برای تست (بدون commit کل فایل)
 
-### Payer Card Key
+```bash
+mkdir -p data
+head -n 15000 full_dataset.csv > data/sample_data.csv
+```
 
-`payer_card_key` is approximately **94% null**. Every non-null card appears in
-only one transaction. **Repeat-behavior analysis is not reliable** and is not
-implemented.
+یا با اسکریپت داخلی (داده مصنوعی با همان schema):
 
-### Diagnostic Columns
+```bash
+python scripts/seed_demo.py --rows 100000 --out data/zarrinpal_dataset.csv
+```
 
-The following columns are ~94% null:
+## بررسی schema واقعی (قبل از اجرا)
 
-- `switch_response_code`
-- `psp_code`
-- `issuer_bank_code`
-- `payer_card_key`
-- `try_created_at`
+قبل از اجرای کامل، هدر واقعی CSV را با ستون‌های مورد انتظار مقایسه کنید:
 
-These may only be populated for verified or successful transactions.
+```bash
+head -n 1 data/zarrinpal_dataset.csv
+```
 
-### Date Availability
+ستون‌های مورد انتظار (طبق مستندات چالش):
 
-Only `created_at` is always present (100% non-null). All other date columns
-(`try_created_at`, `verified_at`, `settled_at`) have high null rates. Daily
-trends are based on `created_at` only.
+```
+session_key, try_seq, terminal_key, merchant_key, category_id, category_title,
+amount, adjusted_fee, session_status, try_status, switch_response_code,
+psp_code, issuer_bank_code, payer_card_key, verify_type, init_time_ms,
+verify_time_ms, created_at, try_created_at, verified_at, settled_at, expire_in
+```
 
-### Counting Unit Distinction
+اگر نام ستون‌ها متفاوت بود، `services/data-processing/ingest.py` را مطابق هدر واقعی اصلاح کنید.
 
-- **Row:** A single CSV record (payment attempt).
-- **Session:** A unique `session_key` (may contain multiple attempt rows).
-- **Verified session:** A row where `session_status = 'Verified'`.
-- **Settled session:** A row where `settled_at` is non-null.
+---
 
-Success rate is calculated as verified sessions relative to total attempt rows,
-not as attempt-level success.
+## تحلیل‌های ممکن vs غیرممکن (با همین schema)
 
-### Data Freshness
+### ✅ قابل پیاده‌سازی
+- رتبه‌بندی پذیرندگان، حجم/مبلغ/نرخ موفقیت/شکست
+- تحلیل روند زمانی و فصلی (نوروز)
+- مقایسه هم‌صنف (`category_id`)
+- سهم `adjusted_fee` (فقط نسبی — کارمزد واقعی نیست)
+- تشخیص ناهنجاری، سگمنت‌بندی پذیرندگان
+- نرخ موفقیت/شکست در هر مرحله چرخه پرداخت
 
-This dashboard uses static CSV data. There is no real-time processing or
-live data feed. Refresh the dataset file to update the analysis.
+### ❌ نیازمند ستون‌هایی که در دیتاست وجود ندارند
+- **fast-moving / slow-moving**: نیازمند ستون‌های محصول (`product_id`)، موجودی و فروش است — **وجود ندارد**؛ نباید فرض شود.
+- **موجودی/گردش کالا و overstock**: نیازمند داده انبار — وجود ندارد.
+
+### ⚠️ محدود
+- **رفتار مشتری / خرید مجدد**: تنها شناسه کارت `payer_card_key` است که **درون هر پذیرنده** یکتاست (یک کارت نزد دو پذیرنده دو شناسه متفاوت). تحلیل خرید مجدد فقط *درون یک پذیرنده* و با این محدودیت ممکن است.
+
+---
+
+## قراردادهای داده
+
+- **واحد پول**: ریال (تمام مبالغ)
+- **سطح داده**: تلاش پرداخت (`try_seq`)، نه سشن یکتا
+- **`adjusted_fee`**: با ضریب ثابت تعدیل شده — **فقط مقایسه نسبی** معتبر است
+- **nullها**: ستون‌های کارت/بانک فقط در تراکنش تکمیل‌شده پر می‌شوند
+- **شناسه‌ها مستعار** هستند
+
+### مقادار وضعیت پرداخت (`session_status`)
+
+| مقدار | معنا |
+| ----- | ---- |
+| `Verified` | پرداخت انجام شده و پذیرنده آن را تأیید (verify) کرده است — حالت نهایی و کامل |
+| `Paid` | مبلغ از کارت خریدار برداشت شده، اما پذیرنده تراکنش را verify نکرده است |
+| `InBank` | کاربر به درگاه بانک هدایت شده اما نتیجه‌ای بازنگشته است |
+| `Failed` | تلاش/سشن ناموفق بوده است |
+| `Reversed` | وجه برگشت خور�ده است |
+| `NoAttempt` | فقط در `try_status`: برای سشنی که هیچ تلاش پرداختی برای آن ثبت نشده |
+
+### قانون موفقیت/شکست
+
+- **موفقیت** = `session_status IN ('Verified', 'Paid', 'Reversed')`
+- **شکست** = `session_status IN ('Failed', 'InBank', 'NoAttempt')`
