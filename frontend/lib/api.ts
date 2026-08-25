@@ -355,4 +355,15 @@ export const api = {
     return fetchAPI<AIChatResponse>(`/api/v1/ai/chat?${params.toString()}`)
   },
   getHealth: () => fetchAPI<any>('/api/v1/health'),
+  getCalculationDetails: () =>
+    fetchAPI<any>('/api/v1/sales/calculation-details'),
+  getSalesShare: (merchant_key?: string, category_id?: string, start_date?: string, end_date?: string) => {
+    const params = new URLSearchParams()
+    if (merchant_key) params.set('merchant_key', merchant_key)
+    if (category_id) params.set('category_id', category_id)
+    if (start_date) params.set('start_date', start_date)
+    if (end_date) params.set('end_date', end_date)
+    const qs = params.toString()
+    return fetchAPI<any>(`/api/v1/sales/share${qs ? `?${qs}` : ''}`)
+  },
 }

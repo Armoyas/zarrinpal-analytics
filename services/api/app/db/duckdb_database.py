@@ -1360,3 +1360,581 @@ class DuckDBManager:
                 "adjusted_fee": "SUM(adjusted_fee) - confidentiality-adjusted indicator",
             },
         }
+
+    # ==========================================================
+    # STAGE 2: Sales Share & Time-Based Analytics
+    # ==========================================================
+
+    def _build_where_clause(self, start_date, end_date, merchant_key, category_id):
+        """Shared WHERE-clause builder for Stage 2 methods."""
+        where_clauses = []
+        params = []
+        if start_date:
+            where_clauses.append("CAST(created_at AS DATE) >= CAST(? AS DATE)")
+            params.append(start_date)
+        if end_date:
+            where_clauses.append("CAST(created_at AS DATE) <= CAST(? AS DATE)")
+            params.append(end_date)
+        if merchant_key:
+            where_clauses.append("merchant_key = ?")
+            params.append(merchant_key)
+        if category_id:
+            where_clauses.append("category_id = ?")
+            params.append(category_id)
+        where_sql = ""
+        if where_clauses:
+            where_sql = "WHERE " + " AND ".join(where_clauses)
+        return where_sql, params
+
+    def get_sales_share(
+        self,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        merchant_key: str | None = None,
+        category_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Calculate merchant and category sales share.
+
+        **Sales** (Stage 2) = amount from rows where session_status
+        indicates a completed payment: 'Verified', 'Paid', or 'Reversed'.
+        This is the "successful_amount" definition.
+
+        The Stage 1 "total_amount" (all rows) is also returned for comparison.
+        """
+        conn = self.get_connection()
+        where_sql, params = self._build_where_clause(
+            start_date, end_date, merchant_key, category_id
+        )
+
+        # --- Summary over the filtered population ---
+        summary_sql = f"""
+            SELECT
+                COUNT(*) AS total_attempts,
+                COUNT(DISTINCT session_key) AS total_sessions,
+                SUM(amount) AS total_amount,
+                SUM(CASE WHEN session_status IN ({STATUS_COMPLETED}) THEN 1 ELSE 0 END) AS completed_attempts,
+                SUM(CASE WHEN session_status = 'Paid' THEN amount ELSE 0 END) AS verified_amount,
+                SUM(CASE WHEN session_status IN ({STATUS_COMPLETED}) THEN amount ELSE 0 END) AS successful_amount
+            FROM payments
+            {where_sql}
+        """
+        summary = conn.execute(summary_sql, params).fetchone()
+        labels = [d[0] for d in conn.description]
+        summary = dict(zip(labels, summary)) if summary else {}
+
+        total_amount = summary.get("total_amount") or 0
+        successful_amount = summary.get("successful_amount") or 0
+        total_attempts = summary.get("total_attempts") or 0
+        total_sessions = summary.get("total_sessions") or 0
+        completed_attempts = summary.get("completed_attempts") or 0
+
+        # --- Merchant-level sales share ---
+        merchant_sql = f"""
+            SELECT
+                merchant_key,
+                COUNT(*) AS attempt_count,
+                COUNT(DISTINCT session_key) AS unique_sessions,
+                SUM(amount) AS total_amount,
+                SUM(CASE WHEN session_status IN ({STATUS_COMPLETED}) THEN 1 ELSE 0 END) AS verified_count,
+                SUM(CASE WHEN session_status IN ({STATUS_COMPLETED}) THEN amount ELSE 0 END) AS successful_amount
+            FROM payments
+            {where_sql}
+            GROUP BY merchant_key
+            ORDER BY total_amount DESC
+        """
+        rows = conn.execute(merchant_sql, params).fetchall()
+        col_labels = [d[0] for d in conn.description]
+        merchants = []
+        for i, row in enumerate(rows):
+            d = dict(zip(col_labels, row))
+            d["amount_share_pct"] = round(
+                (d["total_amount"] / total_amount * 100) if total_amount else 0, 2
+            )
+            d["successful_amount_share_pct"] = round(
+                (d["successful_amount"] / successful_amount * 100) if successful_amount else 0, 2
+            )
+            d["rank_by_amount"] = i + 1
+            d["rank_by_count"] = i + 1
+            merchants.append(d)
+
+        # --- Category-level sales share ---
+        category_sql = f"""
+            SELECT
+                category_id,
+                category_title,
+                COUNT(*) AS attempt_count,
+                SUM(amount) AS total_amount,
+                SUM(CASE WHEN session_status IN ({STATUS_COMPLETED}) THEN 1 ELSE 0 END) AS verified_count,
+                SUM(CASE WHEN session_status IN ({STATUS_COMPLETED}) THEN amount ELSE 0 END) AS successful_amount
+            FROM payments
+            {where_sql}
+            GROUP BY category_id, category_title
+            ORDER BY total_amount DESC
+        """
+        rows = conn.execute(category_sql, params).fetchall()
+        col_labels = [d[0] for d in conn.description]
+        categories = []
+        for i, row in enumerate(rows):
+            d = dict(zip(col_labels, row))
+            d["amount_share_pct"] = round(
+                (d["total_amount"] / total_amount * 100) if total_amount else 0, 2
+            )
+            d["successful_amount_share_pct"] = round(
+                (d["successful_amount"] / successful_amount * 100) if successful_amount else 0, 2
+            )
+            d["rank_by_amount"] = i + 1
+            categories.append(d)
+
+        return {
+            "merchant_sales_share": merchants,
+            "category_sales_share": categories,
+            "summary": {
+                "total_amount": total_amount,
+                "successful_amount": successful_amount,
+                "total_attempts": total_attempts,
+                "total_sessions": total_sessions,
+                "total_verified": completed_attempts,
+            },
+            "how_calculated": {
+                "sales_definition": "Stage 2: amount from rows where session_status IN ('Verified','Paid','Reversed')",
+                "total_amount": "SUM(amount) - all attempt amounts in Rials",
+                "successful_amount": f"SUM(amount) WHERE session_status IN ({STATUS_COMPLETED})",
+                "amount_share_pct": "merchant_amount / total_amount * 100",
+                "successful_amount_share_pct": "merchant_successful_amount / total_successful_amount * 100",
+                "counting_unit": "rows (amount in IRR)",
+                "limitation": "settled_at is NULL for 98.95% of rows; session_status used instead",
+            },
+            "filters": {
+                "merchant_key": merchant_key,
+                "category_id": category_id,
+                "start_date": start_date,
+                "end_date": end_date,
+            },
+        }
+
+    def _activity_trend(
+        self,
+        interval: str,  # "day", "month", "year"
+        start_date: str | None = None,
+        end_date: str | None = None,
+        merchant_key: str | None = None,
+        category_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Core time-series builder shared by daily/monthly/yearly endpoints.
+
+        Returns per-period attempt count, total amount, successful amount,
+        verified count, failed count, success rate, and previous-period
+        comparison using LAG window function.
+        """
+        conn = self.get_connection()
+        where_sql, params = self._build_where_clause(
+            start_date, end_date, merchant_key, category_id
+        )
+
+        if interval == "day":
+            group_expr = "CAST(created_at AS DATE)"
+            period_alias = "period"
+            date_format = "%Y-%m-%d"
+        elif interval == "month":
+            group_expr = "strftime(CAST(created_at AS DATE), '%Y-%m')"
+            period_alias = "period"
+            date_format = "%Y-%m"
+        elif interval == "year":
+            group_expr = "CAST(strftime(CAST(created_at AS DATE), '%Y') AS INTEGER)"
+            period_alias = "period"
+            date_format = None  # year is integer
+        else:
+            raise ValueError(f"Invalid interval: {interval}")
+
+        # Build the metric subquery, then use LAG for previous-period comparison
+        sql = f"""
+            WITH base AS (
+                SELECT
+                    {group_expr} AS period,
+                    COUNT(*) AS attempt_count,
+                    SUM(amount) AS total_amount,
+                    SUM(CASE WHEN session_status IN ({STATUS_COMPLETED}) THEN 1 ELSE 0 END) AS verified_count,
+                    SUM(CASE WHEN session_status IN ({STATUS_COMPLETED}) THEN amount ELSE 0 END) AS successful_amount,
+                    SUM(CASE WHEN session_status = 'Failed' THEN 1 ELSE 0 END) AS failed_count
+                FROM payments
+                {where_sql}
+                GROUP BY {group_expr}
+            )
+            SELECT
+                period,
+                attempt_count,
+                total_amount,
+                successful_amount,
+                verified_count,
+                failed_count,
+                ROUND(100.0 * verified_count / NULLIF(attempt_count, 0), 2) AS success_rate,
+                LAG(attempt_count) OVER (ORDER BY period) AS prev_attempt_count,
+                LAG(total_amount) OVER (ORDER BY period) AS prev_total_amount,
+                LAG(successful_amount) OVER (ORDER BY period) AS prev_successful_amount
+            FROM base
+            ORDER BY period
+        """
+        rows = conn.execute(sql, params).fetchall()
+        col_labels = [d[0] for d in conn.description]
+
+        results = []
+        for row in rows:
+            d = dict(zip(col_labels, row))
+            # Convert period to string
+            period = d.pop("period")
+            if period is not None:
+                if hasattr(period, "strftime"):
+                    d["period"] = period.strftime(date_format) if date_format else str(period)
+                else:
+                    d["period"] = str(period)
+            else:
+                d["period"] = None
+            # Rename for clarity
+            d["total_amount"] = d.get("total_amount") or 0
+            d["successful_amount"] = d.get("successful_amount") or 0
+            # Previous period comparison
+            prev_count = d.pop("prev_attempt_count", None)
+            prev_amount = d.pop("prev_total_amount", None)
+            prev_success = d.pop("prev_successful_amount", None)
+            d["previous_period_count"] = prev_count
+            d["count_change_pct"] = round(
+                (d["attempt_count"] - prev_count) / prev_count * 100, 2
+            ) if prev_count else None
+            d["previous_period_amount"] = prev_amount
+            d["amount_change_pct"] = round(
+                (d["total_amount"] - prev_amount) / prev_amount * 100, 2
+            ) if prev_amount else None
+            d["previous_period_successful_amount"] = prev_success
+            d["successful_amount_change_pct"] = round(
+                (d["successful_amount"] - prev_success) / prev_success * 100, 2
+            ) if prev_success else None
+            results.append(d)
+
+        return {
+            f"{interval}_activity": results,
+            "period_summary": {
+                "total_attempts": sum(r["attempt_count"] for r in results),
+                "total_successful_amount": sum(r["successful_amount"] for r in results),
+            },
+            "how_calculated": {
+                "attempt_count": f"COUNT(*) GROUP BY {interval}",
+                "total_amount": f"SUM(amount) GROUP BY {interval}",
+                "successful_amount": f"SUM(amount) WHERE session_status IN ({STATUS_COMPLETED}) GROUP BY {interval}",
+                "verified_count": f"COUNT WHERE session_status IN ({STATUS_COMPLETED}) GROUP BY {interval}",
+                "failed_count": "COUNT(*) WHERE session_status = 'Failed' GROUP BY period",
+                "success_rate": "(verified_count / attempt_count) * 100",
+                "previous_period_comparison": "LAG window function (previous period)",
+                "counting_unit": f"rows per {interval}",
+            },
+            "filters": {
+                "merchant_key": merchant_key,
+                "category_id": category_id,
+                "start_date": start_date,
+                "end_date": end_date,
+            },
+        }
+
+    def get_activity_daily(self, **kwargs) -> dict[str, Any]:
+        """Daily activity trend with previous-day comparison."""
+        result = self._activity_trend("day", **kwargs)
+        result["daily_activity"] = result.pop("day_activity")
+        return result
+
+    def get_activity_monthly(self, **kwargs) -> dict[str, Any]:
+        """Monthly activity trend with previous-month comparison."""
+        result = self._activity_trend("month", **kwargs)
+        result["monthly_activity"] = result.pop("month_activity")
+        return result
+
+    def get_activity_yearly(self, **kwargs) -> dict[str, Any]:
+        """Yearly activity trend with previous-year comparison."""
+        result = self._activity_trend("year", **kwargs)
+        result["yearly_activity"] = result.pop("year_activity")
+        return result
+
+    def get_merchant_ranking(
+        self,
+        sort_by: str = "amount",
+        limit: int = 10,
+        start_date: str | None = None,
+        end_date: str | None = None,
+    ) -> dict[str, Any]:
+        """Top merchants by amount or count, with highest activity day/month."""
+        conn = self.get_connection()
+
+        valid_sorts = ["amount", "count"]
+        if sort_by not in valid_sorts:
+            raise ValueError(f"Invalid sort_by. Choose from: {valid_sorts}")
+
+        order_col = "total_amount" if sort_by == "amount" else "attempt_count"
+
+        where_sql, params = self._build_where_clause(
+            start_date, end_date, None, None
+        )
+
+        sql = f"""
+            SELECT
+                merchant_key,
+                category_title,
+                COUNT(*) AS attempt_count,
+                SUM(amount) AS total_amount,
+                SUM(CASE WHEN session_status IN ({STATUS_COMPLETED}) THEN 1 ELSE 0 END) AS verified_count,
+                SUM(CASE WHEN session_status IN ({STATUS_COMPLETED}) THEN amount ELSE 0 END) AS successful_amount,
+                ROUND(
+                    100.0 * SUM(CASE WHEN session_status IN ({STATUS_COMPLETED}) THEN 1 ELSE 0 END)
+                    / NULLIF(COUNT(*), 0), 2
+                ) AS success_rate
+            FROM payments
+            {where_sql}
+            GROUP BY merchant_key, category_title
+            ORDER BY {order_col} DESC
+            LIMIT ?
+        """
+        ranking_params = params + [limit]
+
+        rows = conn.execute(sql, ranking_params).fetchall()
+        col_labels = [d[0] for d in conn.description]
+        ranking = []
+        for i, row in enumerate(rows):
+            d = dict(zip(col_labels, row))
+            d["amount_rank"] = i + 1
+            d["count_rank"] = i + 1
+            ranking.append(d)
+
+        # Calculate share percentages relative to total
+        total_amount_val = sum(r["total_amount"] or 0 for r in ranking)
+        for r in ranking:
+            r["amount_share_pct"] = round(
+                (r["total_amount"] or 0) / total_amount_val * 100 if total_amount_val else 0, 2
+            )
+
+        # --- Highest activity day ---
+        day_sql = f"""
+            SELECT
+                CAST(created_at AS DATE) AS day,
+                COUNT(*) AS attempt_count,
+                SUM(CASE WHEN session_status IN ({STATUS_COMPLETED}) THEN amount ELSE 0 END) AS successful_amount
+            FROM payments
+            {where_sql}
+            GROUP BY CAST(created_at AS DATE)
+            ORDER BY attempt_count DESC
+            LIMIT 1
+        """
+        day_row = conn.execute(day_sql, params).fetchone()
+        day_labels = [d[0] for d in conn.description]
+        highest_day = dict(zip(day_labels, day_row)) if day_row else None
+        if highest_day and highest_day.get("day") and hasattr(highest_day["day"], "strftime"):
+            highest_day["day"] = highest_day["day"].strftime("%Y-%m-%d")
+
+        # --- Highest activity month ---
+        month_sql = f"""
+            SELECT
+                strftime(CAST(created_at AS DATE), '%Y-%m') AS month,
+                COUNT(*) AS attempt_count,
+                SUM(CASE WHEN session_status IN ({STATUS_COMPLETED}) THEN amount ELSE 0 END) AS successful_amount
+            FROM payments
+            {where_sql}
+            GROUP BY strftime(CAST(created_at AS DATE), '%Y-%m')
+            ORDER BY attempt_count DESC
+            LIMIT 1
+        """
+        month_row = conn.execute(month_sql, params).fetchone()
+        month_labels = [d[0] for d in conn.description]
+        highest_month = dict(zip(month_labels, month_row)) if month_row else None
+
+        # --- Highest activity year ---
+        year_sql = f"""
+            SELECT
+                CAST(strftime(CAST(created_at AS DATE), '%Y') AS INTEGER) AS year,
+                COUNT(*) AS attempt_count,
+                SUM(CASE WHEN session_status IN ({STATUS_COMPLETED}) THEN amount ELSE 0 END) AS successful_amount
+            FROM payments
+            {where_sql}
+            GROUP BY CAST(strftime(CAST(created_at AS DATE), '%Y') AS INTEGER)
+            ORDER BY attempt_count DESC
+            LIMIT 1
+        """
+        year_row = conn.execute(year_sql, params).fetchone()
+        year_labels = [d[0] for d in conn.description]
+        highest_year = dict(zip(year_labels, year_row)) if year_row else None
+
+        return {
+            "ranking": ranking,
+            "highest_activity_day": highest_day,
+            "highest_activity_month": highest_month,
+            "highest_activity_year": highest_year,
+            "sort_by": sort_by,
+            "limit": limit,
+            "how_calculated": {
+                "total_amount": "SUM(amount) GROUP BY merchant_key, ordered DESC",
+                "attempt_count": "COUNT(*) GROUP BY merchant_key",
+                "success_rate": "(verified_count / attempt_count) * 100",
+                "amount_rank": "ROW_NUMBER() OVER (ORDER BY total_amount DESC)",
+                "count_rank": "ROW_NUMBER() OVER (ORDER BY attempt_count DESC)",
+                "amount_share_pct": "merchant_amount / sum(all_merchant_amounts) * 100",
+                "highest_activity_day": "GROUP BY CAST(created_at AS DATE), ORDER BY count DESC LIMIT 1",
+                "highest_activity_month": "GROUP BY strftime(created_at, '%Y-%m'), ORDER BY count DESC LIMIT 1",
+                "counting_unit": "rows per merchant",
+                "sales_definition": "Stage 2 successful_amount = SUM(amount) WHERE session_status IN ('Verified','Paid','Reversed')",
+            },
+            "filters": {
+                "start_date": start_date,
+                "end_date": end_date,
+            },
+        }
+
+    def get_calculation_details(self) -> dict[str, Any]:
+        """Return all metric definitions with traceability metadata."""
+        return {
+            "metrics": [
+                {
+                    "metric_id": "attempt_count",
+                    "name": "Payment attempt count",
+                    "name_fa": "تعداد تلاش‌های پرداخت",
+                    "definition": "Number of raw rows in the filtered dataset.",
+                    "formula": "COUNT(*) WHERE filters",
+                    "source_columns": ["*"],
+                    "counting_unit": "rows",
+                    "filters": ["merchant_key", "category_id", "date_range"],
+                    "limitations": "One row = one payment attempt. Multiple attempts per session are counted separately.",
+                },
+                {
+                    "metric_id": "unique_session_count",
+                    "name": "Unique sessions",
+                    "name_fa": "نشست‌های یکتا",
+                    "definition": "Number of distinct session_key values.",
+                    "formula": "COUNT(DISTINCT session_key)",
+                    "source_columns": ["session_key"],
+                    "counting_unit": "sessions",
+                    "filters": ["merchant_key", "category_id", "date_range"],
+                    "limitations": "NULL session_keys excluded. Multiple attempts per session counted once.",
+                },
+                {
+                    "metric_id": "total_amount",
+                    "name": "Total amount (all attempts)",
+                    "name_fa": "مجموع مبلغ (تمام تلاش‌ها)",
+                    "definition": "Sum of amount across ALL filtered rows, regardless of status.",
+                    "formula": "SUM(amount) WHERE filters",
+                    "source_columns": ["amount"],
+                    "counting_unit": "rows (sum, IRR)",
+                    "filters": ["merchant_key", "category_id", "date_range"],
+                    "limitations": "Stage 1 definition. Includes failed/reversed/every status.",
+                },
+                {
+                    "metric_id": "successful_amount",
+                    "name": "Successful amount",
+                    "name_fa": "مبلغ موفق",
+                    "definition": "Sum of amount from rows where session_status indicates a completed payment.",
+                    "formula": "SUM(amount) WHERE session_status IN ('Verified','Paid','Reversed')",
+                    "source_columns": ["amount", "session_status"],
+                    "counting_unit": "rows (sum, IRR)",
+                    "filters": ["merchant_key", "category_id", "date_range"],
+                    "limitations": "Stage 2 definition. settled_at is NULL for 98.95% of rows so session_status is used.",
+                },
+                {
+                    "metric_id": "completed_attempts",
+                    "name": "Completed payment attempts",
+                    "name_fa": "تلاش‌های پرداخت تکمیل شده",
+                    "definition": "Count of payment attempts where session_status indicates a completed payment.",
+                    "formula": "COUNT(*) WHERE session_status IN ('Verified','Paid','Reversed')",
+                    "source_columns": ["session_status"],
+                    "counting_unit": "attempts",
+                    "filters": ["merchant_key", "category_id", "date_range"],
+                    "limitations": "Uses session_status instead of settled_at (98.95% NULL).",
+                },
+                {
+                    "metric_id": "success_rate",
+                    "name": "Success rate",
+                    "name_fa": "نرخ موفقیت",
+                    "definition": "Percentage of attempts that completed successfully.",
+                    "formula": "(COUNT(session_status IN ('Verified','Paid','Reversed')) / COUNT(*)) * 100",
+                    "source_columns": ["session_status"],
+                    "counting_unit": "percentage (0-100)",
+                    "filters": ["merchant_key", "category_id", "date_range"],
+                    "limitations": "Returns 0.0 when attempt_count is 0 to avoid division-by-zero.",
+                },
+                {
+                    "metric_id": "sales_share_pct",
+                    "name": "Sales share",
+                    "name_fa": "سهم فروش",
+                    "definition": "Merchant's amount as a percentage of the total amount.",
+                    "formula": "merchant_amount / total_amount * 100",
+                    "source_columns": ["amount", "merchant_key"],
+                    "counting_unit": "percentage (0-100)",
+                    "filters": ["merchant_key", "category_id", "date_range"],
+                    "limitations": "Shares may not sum to exactly 100 due to rounding.",
+                },
+                {
+                    "metric_id": "amount_share_pct",
+                    "name": "Total amount share",
+                    "name_fa": "سهم مجموع مبلغ",
+                    "definition": "Merchant's total_amount share of the population total_amount.",
+                    "formula": "merchant_total_amount / population_total_amount * 100",
+                    "source_columns": ["amount", "merchant_key"],
+                    "counting_unit": "percentage (0-100)",
+                    "filters": ["merchant_key", "category_id", "date_range"],
+                    "limitations": "Uses Stage 1 total_amount definition (all rows).",
+                },
+            ],
+            "sales_definition_stage1": "All rows matching filter. Counting unit: rows.",
+            "sales_definition_stage2": "Amount from rows where session_status IN ('Verified', 'Paid', 'Reversed'). This is the 'successful_amount' used for sales share.",
+            "stage2_sales_rationale": [
+                "session_status has 0.00% null values — fully populated",
+                "settled_at is NULL for 98.95% of rows — too sparse",
+                "verified_at is NULL for 94.43% of rows — too sparse",
+                "session_status = 'Verified' captures 44.84% of rows — meaningful coverage",
+            ],
+        }
+
+    def get_highest_activity_day(
+        self,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        merchant_key: str | None = None,
+    ) -> dict[str, Any]:
+        """Return the single day with the highest payment attempt count."""
+        conn = self.get_connection()
+        where_sql, params = self._build_where_clause(start_date, end_date, merchant_key, None)
+        sql = f"""
+            SELECT
+                CAST(created_at AS DATE) AS day,
+                COUNT(*) AS attempt_count,
+                SUM(amount) AS total_amount,
+                SUM(CASE WHEN session_status IN ({STATUS_COMPLETED}) THEN amount ELSE 0 END) AS successful_amount
+            FROM payments
+            {where_sql}
+            GROUP BY CAST(created_at AS DATE)
+            ORDER BY attempt_count DESC
+            LIMIT 1
+        """
+        row = conn.execute(sql, params).fetchone()
+        labels = [d[0] for d in conn.description]
+        result = dict(zip(labels, row)) if row else {}
+        if result.get("day") and hasattr(result["day"], "strftime"):
+            result["day"] = result["day"].strftime("%Y-%m-%d")
+        return result
+
+    def get_highest_activity_month(
+        self,
+        start_date: str | None = None,
+        end_date: str | None = None,
+        merchant_key: str | None = None,
+    ) -> dict[str, Any]:
+        """Return the single month with the highest payment attempt count."""
+        conn = self.get_connection()
+        where_sql, params = self._build_where_clause(start_date, end_date, merchant_key, None)
+        sql = f"""
+            SELECT
+                strftime(CAST(created_at AS DATE), '%Y-%m') AS month,
+                COUNT(*) AS attempt_count,
+                SUM(amount) AS total_amount,
+                SUM(CASE WHEN session_status IN ({STATUS_COMPLETED}) THEN amount ELSE 0 END) AS successful_amount
+            FROM payments
+            {where_sql}
+            GROUP BY strftime(CAST(created_at AS DATE), '%Y-%m')
+            ORDER BY attempt_count DESC
+            LIMIT 1
+        """
+        row = conn.execute(sql, params).fetchone()
+        labels = [d[0] for d in conn.description]
+        return dict(zip(labels, row)) if row else {}

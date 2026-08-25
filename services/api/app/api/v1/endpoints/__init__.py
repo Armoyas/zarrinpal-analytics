@@ -23,11 +23,13 @@ from app.schemas import (
 from app.api.v1.endpoints.metrics import router as metrics_router
 from app.api.v1.endpoints.insights import router as insights_router
 from app.api.v1.endpoints.nowruz import router as nowruz_router
+from app.api.v1.endpoints.sales import router as sales_router
 
 router = APIRouter()
 router.include_router(metrics_router, tags=["metrics"])
 router.include_router(insights_router, tags=["insights"])
 router.include_router(nowruz_router, tags=["nowruz"])
+router.include_router(sales_router, tags=["sales"])
 
 db = DuckDBManager()
 

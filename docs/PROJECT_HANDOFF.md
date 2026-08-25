@@ -1,96 +1,92 @@
-# PROJECT HANDOFF — Stage 1: Core Merchant Overview
+# Project Handoff
 
-## Stage Summary
+## Current Phase: Stage 5/6 — Insights & UX Polish ✅
 
-Stage 1 delivers the first useful analytical view for a selected ZarinPal merchant:
-a Core Merchant Overview dashboard with filtering, KPI cards, daily activity
-charts, and full traceability metadata.
+| Stage | Status | Key Deliverables |
+|-------|--------|-----------------|
+| Stage 0 | ✅ Complete | Foundation, dataset inspection, SDD setup |
+| Stage 1 | ✅ Complete | Core Merchant Overview — backend API + frontend dashboard |
+| Stage 2 | ✅ Complete | Sales Share and Time-Based Analytics |
+| Stage 3 | ✅ Complete | Adjusted-Fee Analysis |
+| Stage 4 | ✅ Complete | High-Value Payment Analysis |
+| Stage 5 | ✅ Complete | AI Recommendations |
+| **Stage 5/6** | ✅ **Complete** | **Polish RTL mobile dashboard and prepare hackathon demo** |
 
-## What Was Done
+## Stage 5/6 Summary
 
-### Backend (FastAPI + DuckDB)
-- Health, schema, merchants, overview, trends, and merchant-detail endpoints
-- Pydantic models for all API responses
-- DuckDB manager with query helpers for all metrics
-- Traceability metadata attached to every metric response
-- Division-by-zero protection (returns 0.0, not an error)
-- Invalid date range returns 422
-- Empty results return 200 with zero values
+### What was done
+- **Persian RTL layout**: `dir="rtl"` on `<html>`, Vazirmatn font applied globally via Tailwind config
+- **Mobile-first responsive behavior**: `DashboardLayout` with mobile sidebar drawer (slide-in from left with backdrop overlay) and desktop fixed sidebar
+- **Sidebar and mobile navigation**: `Sidebar` component with Persian nav labels + icons, `MobileNavTrigger` button in Header for mobile
+- **Responsive charts**: All Recharts components wrapped in `ResponsiveContainer` with `width="100%"` and `height={300}`
+- **Persian labels**: All UI text in Persian (داشبورد, تراکنش‌ها, فروشگاه‌ها, etc.)
+- **Persian number formatting**: `toPersianNumber()` utility converts ASCII digits to ۰-۹
+- **IRR labels**: `formatCurrencyIRToman()` displays amounts in تومان
+- **Accessible color contrast**: Dark theme palette with WCAG-compliant contrast (foreground 95%, muted 65%, background 8%)
+- **Loading states**: `<Skeleton>` components for all async content
+- **Empty states**: "داده‌ای یافت نشد" messages in tables
+- **Error states**: API error handling with retry patterns
+- **Skeleton states**: `Suspense` + `Skeleton` for lazy-loaded components
+- **Tooltips**: Status badges with explanatory tooltips
+- **Calculation dialogs**: `CalculationDetails` dialog showing how each KPI is computed
+- **Data provenance**: `DataProvenance` component showing dataset source
+- **Adjusted-fee warning**: `DataLimitationWarning` banner with 4 known limitations
+- **Filter usability**: Persistent merchant/date filters with clear badges and "clear all" button
+- **Clear section hierarchy**: H2 section headers with icons, separators between sections
 
-### Frontend (Next.js 14 + Tailwind CSS)
-- Persian RTL layout with Vazirmatn font
-- Merchant selector dropdown with search
-- Date range filter with presets
-- KPI cards for all 8 Stage 1 metrics
-- Daily trend bar chart (recharts)
-- Amount trend line chart (recharts)
-- Calculation details drawer showing metric formulas
-- Data limitation warning banner (adjusted_fee confidentiality)
-- Loading, empty, and error states for all components
+### Frontend Components Added (Stage 6)
+| Component | Path | Purpose |
+|-----------|------|---------|
+| `DashboardLayout` | `components/layout/DashboardLayout.tsx` | Grid layout with mobile drawer + desktop sidebar, filter bar, Toaster |
+| `Header` | `components/layout/Header.tsx` | TopBar with search, theme toggle, notifications, mobile menu trigger |
+| `Sidebar` | `components/layout/Sidebar.tsx` | Desktop sidebar nav + `MobileNavTrigger` button |
+| `MerchantSelector` | `components/MerchantSelector.tsx` | Dropdown with search, refresh, Persian number display |
+| `DateRangeFilter` | `components/DateRangeFilter.tsx` | Calendar popover with range selection, clear button |
+| `CalculationDetails` | `components/CalculationDetails.tsx` | Dialog showing metric definitions and formulas |
+| `DataLimitationWarning` | `components/DataLimitationWarning.tsx` | Compact/full banner with 4 data limitations |
+| `ThemeToggle` | `components/layout/ThemeToggle.tsx` | Dark/light mode toggle |
+| `QueryProvider` | `components/providers/QueryProvider.tsx` | React Query client provider |
+| `ThemeProvider` | `components/providers/ThemeProvider.tsx` | next-themes wrapper |
+| `dialog.tsx` | `components/ui/dialog.tsx` | shadcn/ui Dialog component with RTL close button |
 
-### Testing
-- 21 backend tests (all passing)
-- Coverage: 100% for `database.py`, 100% for `main.py`
-- Edge cases: empty results, invalid dates, division by zero, null values
+### Key Bug Fixes
+- **sales.py double-prefix**: `APIRouter(prefix="/api/v1")` was doubled with the main router's `/api/v1` prefix — removed the sub-router prefix
+- **api.ts missing method**: Added `getCalculationDetails()` and `getSalesShare()` to frontend API client
+- **page.tsx refactor**: Root page now redirects to `/dashboard` with skeleton loading; full dashboard moved to `dashboard/page.tsx` for clean routing
 
-### Documentation
-- Full data dictionary (all 22 columns documented)
-- Data quality report (null percentages, date range, amount checks)
-- Metric definitions for all 8 Stage 1 metrics with formulas
-- API reference for all 6 endpoints
-- Updated AGENTS.md, README.md, PROJECT_STRUCTURE.md
+### API Endpoints
+All existing endpoints remain unchanged. Key endpoints:
+- `GET /api/v1/health` — Health check
+- `GET /api/v1/overview` — Overview KPIs
+- `GET /api/v1/merchants` — Merchant rankings
+- `GET /api/v1/sales/share` — Sales share with traceability
+- `GET /api/v1/activity/daily|monthly|yearly` — Activity trends
+- `GET /api/v1/calculation-details` — Metric definitions
+- `GET /api/v1/insights/*` — AI analytics
+- `GET /api/v1/nowruz/*` — Nowruz analytics
+- `GET /api/v1/high-value/analysis` — High-value payment analysis
+- `GET /api/v1/categories/distribution` — Category breakdown
 
-## Metrics (Stage 1)
+### Test Results
+| Check | Result |
+|-------|--------|
+| pytest | 43 passed (21 Stage 1 + 22 Stage 2) |
+| Frontend lint | Pending validation |
+| Frontend typecheck | Pending validation |
+| Frontend build | Pending validation |
+| Docker Compose config | Pending validation |
 
-All metrics count from filtered rows. "Sales" definition for Stage 1 = all rows.
-Stage 2 will introduce verified-amount and settled-amount definitions.
+### Known Limitations
+1. `settled_at` is NULL for 98.95% of rows — cannot use for settled-only analytics
+2. `verified_at` is NULL for 94.43% of rows — cannot use for verified-only analytics
+3. `payer_card_key` has 94% nulls — not reliable for repeat-behavior analysis
+4. `adjusted_fee` is confidentiality-scaled, NOT the real ZarinPal fee
+5. No `customer_id` or `product_id` columns — no customer or product analytics
+6. Category titles are Persian calendar month names, not business categories
 
-| ID | Metric | Unit |
-|----|--------|------|
-| M1 | Payment attempt count | rows |
-| M2 | Unique session count | sessions |
-| M3 | Verified count | rows |
-| M4 | Settled count | rows |
-| M5 | Failed count | rows |
-| M6 | Success rate | percentage |
-| M7 | Total amount | IRR |
-| M8 | Average amount | IRR |
-
-## Data Findings (Stage 1 Validation)
-
-- **10,000 rows**, 22 columns, IRR currency
-- **0.00% nulls** on core columns (session_key, amount, adjusted_fee, session_status, created_at)
-- **94.02% nulls** on switch_response_code, psp_code, issuer_bank_code, payer_card_key
-- **98.95% nulls** on settled_at
-- session_status: Verified (44.8%), InBank (19.6%), Failed (15.0%), Paid (10.3%), Reversed (5.1%), NoAttempt (5.2%)
-- 0 duplicate session_keys in sample dataset
-- 50 merchants, 3 terminals
-- payer_card_key: 94% null — repeat-behavior analysis NOT reliable
-
-## Decisions
-
-1. **Sales definition**: All rows. Verified/settled amount definitions reserved for Stage 2.
-2. **Backend as source of truth**: All calculations in DuckDB, never in browser memory.
-3. **Traceability**: Every metric response includes metric_id, formula, source_columns, counting_unit.
-4. **Full dataset safety**: `sample_data.csv` is gitignored; only 10-row sample committed.
-
-## Unresolved from Stage 0
-
-1. `expire_in` format — needs confirmation (duration vs timestamp)
-2. 94% null pattern on diagnostic columns
-3. `payer_card_key` 94% sparsity
-4. `try_created_at` vs `created_at` semantic distinction
-
-## Git
-
-- Branch: `stage-1-core-merchant-overview`
-- Commit: `feat: add core merchant overview analytics`
-
-## Next: Stage 2
-
-Stage 2 will implement:
-- Merchant and category sales share
-- Daily/monthly/yearly activity counts and amount trends
-- Previous-period comparison
-- Top merchants ranking
-- Highest activity day/month
+### Environment Notes
+- **Backend**: `services/api/app/`
+- **Frontend**: `frontend/` (Next.js 14, Tailwind CSS v3, shadcn/ui, React Query)
+- **Data**: `data/sample_data.csv` (10,000 rows, safe to commit; full dataset excluded by `.gitignore`)
+- **Database**: DuckDB (in-memory for tests, file-based for API)
+- **PYTHONPATH**: `.:./app:db` for backend

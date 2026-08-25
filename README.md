@@ -1,98 +1,148 @@
-# ZarinPal Analytics Dashboard
+# ZarrinPal Analytics
 
-A modern, Persian (RTL) analytical dashboard for ZarinPal merchants, built with
-FastAPI + DuckDB (backend) and Next.js 14 + Tailwind CSS (frontend).
+A modern Persian RTL analytical dashboard for ZarinPal merchants, built with FastAPI, DuckDB, Next.js, Tailwind CSS, and shadcn/ui.
 
-## Features
+## Overview
 
-- **Merchant Overview**: Payment activity, success rates, and amount trends
-- **Persian RTL**: Full right-to-left layout with Vazirmatn typography
-- **Dataset Inspection**: Schema exploration and data quality reporting
-- **Traceable Metrics**: Every metric documented with formulas and limitations
-- **Responsive Design**: Mobile-first dashboard with interactive charts
+This project analyzes ZarinPal payment data to provide merchants with insights into:
+- Payment activity and trends
+- Sales and payment amounts
+- Merchant performance
+- Success and failure rates
+- Merchant sales share
+- Daily, monthly, and yearly activity patterns
+- AI-powered recommendations and anomaly detection
+- High-value payment analysis
+- Adjusted-fee analysis
+- Nowruz (Persian New Year) holiday analytics
 
-## Stage Status
+## Architecture
 
-| Stage | Name | Status |
-|-------|------|--------|
-| 0 | Project Foundation & Dataset Inspection | ✅ Complete |
-| 1 | Core Merchant Overview | ✅ Complete |
-| 2 | Sales Share & Time-Based Analytics | ⏳ In Progress |
+```
+zarrinpal-analytics/
+├── services/
+│   ├── api/                     # FastAPI backend
+│   │   ├── app/
+│   │   │   ├── api/v1/          # API routes
+│   │   │   │   └── endpoints/
+│   │   │   │       ├── __init__.py        # Core endpoints + router
+│   │   │   │       ├── metrics.py         # PerformanceMetrics, status distribution
+│   │   │   │       ├── insights.py        # AI analytics endpoints
+│   │   │   │       ├── nowruz.py          # Nowruz holiday analytics
+│   │   │   │       └── sales.py           # Stage 2: sales share, activity, ranking
+│   │   │   ├── db/
+│   │   │   │   ├── duckdb_database.py  # DuckDBManager with all analytics
+│   │   │   │   └── __init__.py
+│   │   │   ├── schemas/
+│   │   │   │   └── __init__.py       # Pydantic response models
+│   │   │   ├── config.py            # Settings
+│   │   │   └── main.py              # FastAPI entry point
+│   │   ├── Dockerfile
+│   │   ├── requirements.txt
+│   │   ├── tests/
+│   │   │   ├── conftest.py          # Test fixtures
+│   │   │   ├── test_duckdb.py       # Database tests
+│   │   │   └── test_stage2.py       # Stage 2 tests
+│   │   └── uv.lock
+│   └── frontend/                # Next.js 14 frontend
+│       ├── app/                 # App Router pages
+│       │   ├── layout.tsx       # Persian RTL layout with Vazirmatn
+│       │   ├── page.tsx         # Root → redirect to /dashboard
+│       │   ├── dashboard/       # Main dashboard (9 sections)
+│       │   ├── ai-dashboard/    # AI analytics dashboard
+│       │   ├── nowruz-dashboard/ # Nowruz analytics
+│       │   └── merchant/[key]/  # Merchant detail page
+│       ├── components/
+│       │   ├── layout/          # DashboardLayout, Header, Sidebar, ThemeToggle
+│       │   ├── providers/       # ThemeProvider, QueryProvider
+│       │   ├── dashboard/       # Reusable dashboard widgets
+│       │   ├── MerchantSelector, DateRangeFilter, CalculationDetails,
+│       │   │   DataLimitationWarning
+│       │   └── ui/              # shadcn/ui components
+│       ├── lib/
+│       │   ├── api.ts           # API client functions
+│       │   └── query-client.ts  # React Query client
+│       ├── tailwind.config.ts
+│       ├── package.json
+│       └── next.config.js
+├── data/                      # Dataset (gitignored)
+├── docs/                      # Documentation
+├── specs/                     # SDD specifications
+├── scripts/                   # Data generation & test scripts
+├── docker-compose.yml
+├── .env.example
+├── AGENTS.md
+├── README.md
+└── PROJECT_STRUCTURE.md
+```
 
-## Quick Start
+## Sales Definitions
 
-### Docker Compose
+| Definition | Formula | Counting Unit | Stage |
+|-----------|---------|---------------|-------|
+| `total_amount` | `SUM(amount)` over all rows | rows | Stage 1 |
+| `successful_amount` | `SUM(amount) WHERE session_status IN ('Verified','Paid','Reversed')` | rows | Stage 2 |
+| `settled_amount` | `SUM(amount) WHERE settled_at IS NOT NULL` | rows | Not used (98.95% null) |
+
+## Quick Start (Docker)
 
 ```bash
 docker compose up --build
 ```
 
-- API: http://localhost:8000
-- Frontend: http://localhost:3000
-- API docs: http://localhost:8000/docs
-
-### Environment
-
-Copy `.env.example` and adjust:
-
-```bash
-cp .env.example .env
-```
-
-The dataset path defaults to `data/sample_data.csv`. For production, mount your
-dataset via Docker Compose or set `DATASET_PATH` in `.env`.
-
-## Architecture
-
-```
-┌─────────────────┐       ┌──────────────────┐
-│   Frontend      │ HTTP  │     Backend      │
-│   Next.js 14    │──────▶│   FastAPI 8000   │
-│   Tailwind RTL  │       │   DuckDB         │
-└─────────────────┘       └─────────────────┘
-                             │
-                             │ reads CSV
-                             ▼
-                        ┌────────┐
-                        │  data/ │
-                        └────────┘
-```
-
-- **Backend**: FastAPI with embedded DuckDB for SQL analytics. The backend is
-  the source of truth for all calculations.
-- **Frontend**: Next.js 14 App Router, TypeScript, Tailwind CSS (RTL), recharts
-  for charts, shadcn/ui components.
-- **Data**: CSV file loaded via DuckDB. The full dataset is never committed to git.
-
-## Project Structure
-
-See [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md) for the full layout.
-
-## Documentation
-
-- [Data Dictionary](./docs/data-dictionary.md)
-- [Data Quality Report](./docs/data-quality-report.md)
-- [Metric Definitions](./docs/metric-definitions.md)
-- [API Reference](./docs/api-reference.md)
-- [Project Constitution](./specs/constitution.md)
+- API: http://localhost:8000 (docs: http://localhost:8000/docs)
+- Frontend: http://localhost:3001
 
 ## Development
 
-### Backend Tests
-
+### Backend
 ```bash
 cd services/api
-PYTHONPATH=../../app python -m pytest tests/ -v
+pip install -r requirements.txt
+PYTHONPATH=.:./app:db python -m pytest tests/ -v
+PYTHONPATH=.:./app:db python -m uvicorn app.main:app --reload --port 8000
 ```
 
 ### Frontend
-
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev         # http://localhost:3001
+npm run lint
+npx tsc --noEmit    # typecheck
+npm run build       # production build
 ```
+
+## Test Results
+
+| Check | Result |
+|-------|--------|
+| pytest | 43 passed (21 Stage 1 + 22 Stage 2) |
+| Frontend lint | PASS |
+| Frontend typecheck | PASS |
+| Frontend build | PASS |
+| Docker Compose config | VALID |
+
+## Known Limitations
+
+1. `adjusted_fee` is NOT the real ZarinPal fee — it is a confidentiality-scaled indicator
+2. `settled_at` is NULL for 98.95% of rows — too sparse for settled-only analytics
+3. `payer_card_key` has 94% nulls — cannot support repeat-behavior analysis
+4. No `customer_id` or `product_id` columns — no customer/product analytics
+5. Category titles are Persian calendar month names, not business categories
+
+## Stages
+
+| Stage | Description | Status |
+|-------|-------------|--------|
+| 0 | Project foundation and dataset inspection | ✅ Complete |
+| 1 | Core Merchant Overview | ✅ Complete |
+| 2 | Sales Share and Time-Based Analytics | ✅ Complete |
+| 3 | Adjusted-Fee Analysis | ✅ Complete |
+| 4 | High-Value Payment Analysis | ✅ Complete |
+| 5 | AI Recommendations | ✅ Complete |
+| 5/6 | Insights & UX Polish (RTL, mobile, demo prep) | ✅ Complete |
 
 ## License
 
-This project is for the Elcamp 1405 competition.
+See `docs/PROJECT_HANDOFF.md` for details.
