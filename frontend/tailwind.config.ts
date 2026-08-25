@@ -11,7 +11,8 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
-        sans: ['Vazirmatn', 'system-ui', 'sans-serif'],
+        sans: ['iransans', 'system-ui', 'sans-serif'],
+        iransans: ['iransans', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: 'hsl(var(--border))',
@@ -43,6 +44,12 @@ const config: Config = {
           4: 'hsl(var(--chart-4))',
           5: 'hsl(var(--chart-5))',
         },
+        // OYAZ fixed theme colors
+        oyaz: {
+          primary: '#2f3392',
+          background: '#F4F6F8',
+          accent: '#4A5A6B',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -53,11 +60,11 @@ const config: Config = {
         soft: '0 1px 2px 0 rgb(0 0 0 / 0.03), 0 1px 6px -1px rgb(0 0 0 / 0.04)',
         card: '0 1px 3px 0 rgb(0 0 0 / 0.04), 0 4px 16px -4px rgb(0 0 0 / 0.06)',
         'card-hover': '0 2px 6px 0 rgb(0 0 0 / 0.05), 0 12px 28px -8px rgb(0 0 0 / 0.12)',
-        gold: '0 8px 24px -8px hsl(var(--primary) / 0.45)',
       },
       backgroundImage: {
         'brand-gradient': 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(35 95% 50%) 100%)',
         'gold-soft': 'linear-gradient(180deg, hsl(var(--primary) / 0.10), transparent)',
+        'header-gradient': 'linear-gradient(135deg, hsl(220 30% 12%) 0%, hsl(218 25% 10%) 100%)',
       },
       keyframes: {
         'accordion-down': { from: { height: '0' }, to: { height: 'var(--radix-accordion-content-height)' } },

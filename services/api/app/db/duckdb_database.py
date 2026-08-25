@@ -191,17 +191,17 @@ class DuckDBManager:
             SELECT * FROM payments {where_sql}
         )
         SELECT
-            COUNT(*) as total_attempts,
-            COUNT(DISTINCT session_key) as unique_sessions,
-            SUM(CASE WHEN session_status IN ({STATUS_COMPLETED}) THEN 1 ELSE 0 END) as completed_attempts,
-            SUM(CASE WHEN session_status = 'Paid' THEN 1 ELSE 0 END) as paid_attempts,
-            SUM(CASE WHEN session_status = 'Verified' THEN 1 ELSE 0 END) as verified_attempts,
-            SUM(CASE WHEN session_status = 'Failed' THEN 1 ELSE 0 END) as failed_attempts,
-            SUM(CASE WHEN session_status = 'Reversed' THEN 1 ELSE 0 END) as reversed_attempts,
-            SUM(CASE WHEN session_status = 'NoAttempt' THEN 1 ELSE 0 END) as no_attempt,
-            SUM(amount) as total_amount,
-            AVG(amount) as avg_amount,
-            SUM(adjusted_fee) as total_adjusted_fee
+            COALESCE(COUNT(*), 0) as total_attempts,
+            COALESCE(COUNT(DISTINCT session_key), 0) as unique_sessions,
+            COALESCE(SUM(CASE WHEN session_status IN ({STATUS_COMPLETED}) THEN 1 ELSE 0 END), 0) as completed_attempts,
+            COALESCE(SUM(CASE WHEN session_status = 'Paid' THEN 1 ELSE 0 END), 0) as paid_attempts,
+            COALESCE(SUM(CASE WHEN session_status = 'Verified' THEN 1 ELSE 0 END), 0) as verified_attempts,
+            COALESCE(SUM(CASE WHEN session_status = 'Failed' THEN 1 ELSE 0 END), 0) as failed_attempts,
+            COALESCE(SUM(CASE WHEN session_status = 'Reversed' THEN 1 ELSE 0 END), 0) as reversed_attempts,
+            COALESCE(SUM(CASE WHEN session_status = 'NoAttempt' THEN 1 ELSE 0 END), 0) as no_attempt,
+            COALESCE(SUM(amount), 0) as total_amount,
+            COALESCE(AVG(amount), 0) as avg_amount,
+            COALESCE(SUM(adjusted_fee), 0) as total_adjusted_fee
         FROM base
         """
 
@@ -209,10 +209,10 @@ class DuckDBManager:
         labels = [desc[0] for desc in conn.description]
         metrics = dict(zip(labels, result))
 
-        total = metrics.get("total_attempts", 0)
-        paid = metrics.get("paid_attempts", 0)
-        verified = metrics.get("verified_attempts", 0)
-        completed = metrics.get("completed_attempts", 0)
+        total = metrics.get("total_attempts") or 0
+        paid = metrics.get("paid_attempts") or 0
+        verified = metrics.get("verified_attempts") or 0
+        completed = metrics.get("completed_attempts") or 0
 
         success_rate = ((paid + verified) / total * 100) if total > 0 else 0
         failure_rate = (metrics.get("failed_attempts", 0) / total * 100) if total > 0 else 0
@@ -233,7 +233,7 @@ class DuckDBManager:
             "failure_rate": round(failure_rate, 2),
             "amount": {
                 "total_rials": metrics.get("total_amount", 0),
-                "avg_per_attempt_rials": round(metrics.get("avg_amount", 0), 0),
+                "avg_per_attempt_rials": round(metrics.get("avg_amount") or 0, 0),
                 "currency": "IRR",
             },
             "adjusted_fee_total": metrics.get("total_adjusted_fee", 0),
@@ -254,6 +254,7 @@ class DuckDBManager:
         min_attempts: int = 1,
         start_date: str | None = None,
         end_date: str | None = None,
+        category_id: str | None = None,
     ) -> list[dict[str, Any]]:
         """Get merchant rankings based on real CSV columns."""
         conn = self.get_connection()
@@ -261,6 +262,9 @@ class DuckDBManager:
         where_conditions = ["1=1"]
         params = []
 
+        if category_id is not None:
+            where_conditions.append("CAST(category_id AS VARCHAR) = ?")
+            params.append(str(category_id))
         if start_date:
             where_conditions.append("CAST(created_at AS DATE) >= CAST(? AS DATE)")
             params.append(start_date)
@@ -274,14 +278,14 @@ class DuckDBManager:
         SELECT
             merchant_key,
             category_title,
-            COUNT(*) as total_attempts,
-            COUNT(DISTINCT session_key) as unique_sessions,
-            SUM(CASE WHEN session_status = 'Paid' THEN 1 ELSE 0 END) as paid_attempts,
-            SUM(CASE WHEN session_status IN ({STATUS_COMPLETED}) THEN 1 ELSE 0 END) as completed_attempts,
-            SUM(CASE WHEN session_status = 'Failed' THEN 1 ELSE 0 END) as failed_attempts,
-            SUM(amount) as total_amount,
-            AVG(amount) as avg_amount,
-            SUM(adjusted_fee) as total_adjusted_fee,
+            COALESCE(COUNT(*), 0) as total_attempts,
+            COALESCE(COUNT(DISTINCT session_key), 0) as unique_sessions,
+            COALESCE(SUM(CASE WHEN session_status = 'Paid' THEN 1 ELSE 0 END), 0) as paid_attempts,
+            COALESCE(SUM(CASE WHEN session_status IN ({STATUS_COMPLETED}) THEN 1 ELSE 0 END), 0) as completed_attempts,
+            COALESCE(SUM(CASE WHEN session_status = 'Failed' THEN 1 ELSE 0 END), 0) as failed_attempts,
+            COALESCE(SUM(amount), 0) as total_amount,
+            COALESCE(AVG(amount), 0) as avg_amount,
+            COALESCE(SUM(adjusted_fee), 0) as total_adjusted_fee,
             ROUND(
                 CAST(SUM(CASE WHEN session_status = 'Paid' THEN 1 ELSE 0 END) AS FLOAT) * 100.0
                 / NULLIF(COUNT(*), 0), 2

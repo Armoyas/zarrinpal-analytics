@@ -14,11 +14,13 @@ interface ThemeContextValue {
 
 const ThemeContext = React.createContext<ThemeContextValue | undefined>(undefined)
 
+// Theme is locked: dark is default, only dark/light toggle is allowed.
+// Language, direction, font, and accent are all fixed.
 function getInitialTheme(): Theme {
-  if (typeof window === 'undefined') return 'light'
-  const stored = window.localStorage.getItem('zarinpal-theme')
+  if (typeof window === 'undefined') return 'dark'
+  const stored = window.localStorage.getItem('oyaz-theme')
   if (stored === 'light' || stored === 'dark') return stored
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  return 'dark'
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -28,7 +30,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const root = document.documentElement
     root.classList.toggle('dark', theme === 'dark')
     root.style.colorScheme = theme
-    window.localStorage.setItem('zarinpal-theme', theme)
+    window.localStorage.setItem('oyaz-theme', theme)
   }, [theme])
 
   const value = React.useMemo<ThemeContextValue>(
@@ -49,6 +51,8 @@ export function useTheme() {
   return ctx
 }
 
+// OYAZ Theme — only dark/light toggle, all other settings locked.
+// Direction: RTL | Language: fa | Font: iransans | Accent: slate | Primary: #2f3392
 export function ThemeToggle({ className }: { className?: string }) {
   const { theme, toggle } = useTheme()
   const isDark = theme === 'dark'
@@ -60,14 +64,13 @@ export function ThemeToggle({ className }: { className?: string }) {
       className={cn(
         'group relative inline-flex h-9 w-[4.25rem] items-center rounded-full border bg-muted p-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         className
-      )}
-    >
+      )
+    }>
       <span
         className={cn(
           'flex h-7 w-7 items-center justify-center rounded-full bg-card shadow-sm ring-1 ring-border transition-transform duration-300',
           isDark ? 'translate-x-0' : 'translate-x-[calc(100%+0.25rem)]'
-        )}
-      >
+        )}>
         {isDark ? (
           <Moon className="h-3.5 w-3.5 text-primary" />
         ) : (

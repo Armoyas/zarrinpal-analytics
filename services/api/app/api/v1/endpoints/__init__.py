@@ -53,7 +53,7 @@ async def status_distribution():
     return db.get_status_distribution()
 
 
-@router.get("/overview", response_model=OverviewMetrics)
+@router.get("/overview")
 async def overview(
     start_date: Optional[str] = Query(default=None, description="ISO date: 2024-01-01"),
     end_date: Optional[str] = Query(default=None, description="ISO date: 2024-12-31"),
@@ -64,21 +64,32 @@ async def overview(
     Note: Rows are payment ATTEMPTS (try_seq), not unique sessions.
     Metrics are calculated using DuckDB queries on the real dataset.
     """
-    return db.get_overview_metrics(start_date, end_date, merchant_key)
+    result = db.get_overview_metrics(start_date, end_date, merchant_key)
+    # Ensure all numeric values are non-None for consistent responses
+    if result.get("amount"):
+        result["amount"]["total_rials"] = int(result["amount"].get("total_rials") or 0)
+        result["amount"]["avg_per_attempt_rials"] = int(result["amount"].get("avg_per_attempt_rials") or 0)
+    if result.get("payment_attempts"):
+        for k in ["total", "completed", "paid", "verified", "failed", "reversed", "no_attempt"]:
+            if k in result["payment_attempts"]:
+                result["payment_attempts"][k] = int(result["payment_attempts"].get(k) or 0)
+    result["adjusted_fee_total"] = int(result.get("adjusted_fee_total") or 0)
+    return result
 
 
-@router.get("/merchants", response_model=list[MerchantOverview])
+@router.get("/merchants")
 async def merchants(
     limit: int = Query(default=50),
     min_attempts: int = Query(default=1),
     start_date: Optional[str] = Query(default=None),
     end_date: Optional[str] = Query(default=None),
+    category_id: Optional[str] = Query(default=None, description="Filter by category_id"),
 ):
     """Get merchant rankings based on real CSV columns.
 
     Uses merchant_key, category_title, amount, session_status, adjusted_fee.
     """
-    return db.get_merchants(limit, min_attempts, start_date, end_date)
+    return db.get_merchants(limit, min_attempts, start_date, end_date, category_id)
 
 
 @router.get("/merchants/{merchant_key}/peer-comparison")
