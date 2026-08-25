@@ -219,7 +219,7 @@ class TestOverviewEndpoint:
 
 class TestTrendsEndpoint:
     def test_trends_returns_data(self, client):
-        response = client.get("/api/v1/time-series?interval=daily&merchant_key=M1")
+        response = client.get("/api/v1/time-series?interval=day&merchant_key=M1")
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
@@ -227,7 +227,7 @@ class TestTrendsEndpoint:
         assert len(data) == 2
 
     def test_trends_daily_fields(self, client):
-        response = client.get("/api/v1/time-series?interval=daily&merchant_key=M1")
+        response = client.get("/api/v1/time-series?interval=day&merchant_key=M1")
         data = response.json()
         day = data[0]
         assert "time_period" in day
